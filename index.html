@@ -351,6 +351,7 @@
     }
 
     const API_URL = 'https://script.google.com/macros/s/AKfycbwPlgoPJacGVdma4UKWparazPkjjlE-_7Un_QUe7x1aqZghXKcDAEi3W6zgklWv-YXYHA/exec';
+    const SALES_POST_URL = 'https://script.google.com/macros/s/AKfycbxx8SLI5tzJJrLdyZmbO5vjTnupSqWCNcji6PB9IZvtPpoERdY8YnHf3eIFk7PsUUMVkA/exec';
 
     // 5. Main Single Page Application Component
     function POSApp() {
@@ -675,34 +676,27 @@
         setCompletedReceipt(receipt);
         setActivePaymentType(null);
 
-        // POST Sales Data to Google Apps Script Web App URL
+        // POST Sales Data to new Google Apps Script Web App URL with no-cors mode
         const salesDataPayload = {
-          action: 'recordSale',
-          billId: receipt.id,
+          orderId: "ORD-" + Date.now(),
           totalAmount: currentTotal,
           paymentType: methodName,
-          items: currentCart.map(item => ({
-            productID: item.productID,
-            productName: item.productName,
-            price: item.price,
-            qty: item.qty,
-            subtotal: item.price * item.qty
-          }))
+          cashier: "เจ้าของร้าน"
         };
 
         try {
-          fetch(API_URL, {
+          fetch(SALES_POST_URL, {
             method: 'POST',
+            mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(salesDataPayload)
-          }).then(res => res.json())
-            .then(data => console.log('Successfully recorded sale to Google Sheets:', data))
-            .catch(err => console.log('POST request sent to Google Apps Script Web App'));
+          }).then(() => console.log('Successfully posted sales data to Google Script (no-cors)'))
+            .catch(err => console.log('POST request dispatched via no-cors mode'));
         } catch (e) {
           console.error('Error posting sale data to Google Apps Script:', e);
         }
 
-        // Clear cart for next order
+        // Clear cart immediately for next order
         setCart([]);
         setCashInput('');
       };
