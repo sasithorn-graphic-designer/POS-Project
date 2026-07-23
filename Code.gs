@@ -1,5 +1,5 @@
 /**
- * สุวรรณ การค้า - Google Apps Script (Backend API + Daily Email Report)
+ * สุวรรณ การค้า - Google Apps Script (Backend API + Google Sheets Recorder + Email Report)
  * Target Email: sasithorn.klaysuwan@gmail.com
  * Time Trigger: 21:00 น. ของทุกวัน
  */
@@ -24,11 +24,38 @@ function doGet(e) {
   return ContentService.createTextOutput(JSON.stringify(items)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * รองรับ POST จากหน้าร้าน POS เพื่อบันทึกยอดขายลง Google Sheets อัตโนมัติ
+ */
 function doPost(e) {
   try {
     const contents = JSON.parse(e.postData.contents);
-    sendDailyReportEmail(contents);
-    return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Report sent via email' })).setMimeType(ContentService.MimeType.JSON);
+
+    // 1. กรณีเป็น Action ส่งรายงานสรุปปิดยอดเข้า Email
+    if (contents.action === 'sendReport') {
+      sendDailyReportEmail(contents);
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Report sent via email' })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. กรณีบันทึกรายการขาย (Record Sale) ลง Google Sheets
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let salesSheet = ss.getSheetByName('SalesHistory') || ss.getSheetByName('ยอดขาย');
+    if (!salesSheet) {
+      salesSheet = ss.insertSheet('SalesHistory');
+      salesSheet.appendRow(['วันที่', 'เวลา', 'เลขที่บิล', 'ช่องทางชำระเงิน', 'ยอดเงินรวม (บาท)', 'จำนวนชิ้น', 'รายการสินค้า']);
+    }
+
+    const todayStr = new Date().toLocaleDateString('th-TH');
+    const timeStr = new Date().toLocaleTimeString('th-TH');
+    const billId = contents.billId || contents.id || ('BILL-' + Math.floor(100000 + Math.random() * 900000));
+    const paymentType = contents.paymentType || contents.paymentMethod || contents.method || 'เงินสด';
+    const totalAmount = parseFloat(contents.totalAmount || contents.total || 0);
+    const items = contents.items || [];
+    const itemsDetailStr = items.map(i => `${i.productName || i.name} (x${i.qty})`).join(', ');
+
+    salesSheet.appendRow([todayStr, timeStr, billId, paymentType, totalAmount, items.length, itemsDetailStr]);
+
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Sale recorded to Google Sheet successfully', billId: billId })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -107,7 +134,6 @@ function sendDailyReportEmail(reportData) {
 
 /**
  * ตั้งเวลาส่งรายงานอัตโนมัติทุกวัน เวลา 21:00 น. (Time-driven Trigger)
- * (กด้รันฟังก์ชันนี้ครั้งเดียวใน Apps Script เพื่อเปิดใช้งาน Trigger)
  */
 function setupDailyReportTrigger() {
   const triggers = ScriptApp.getProjectTriggers();

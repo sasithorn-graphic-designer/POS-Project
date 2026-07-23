@@ -645,12 +645,15 @@
         else if (type === 'thaichueaythai') speakThai(`ชำระด้วยโครงการไทยช่วยไทย ${totalAmount()} บาท`);
       };
 
-      const completePayment = (methodName) => {
+      const completePayment = async (methodName) => {
         playAudioTone('pay');
         
+        const currentCart = [...cart()];
+        const currentTotal = totalAmount();
+
         // Deduct stock
         const updatedProducts = products().map(p => {
-          const cartItem = cart().find(ci => ci.productID === p.productID);
+          const cartItem = currentCart.find(ci => ci.productID === p.productID);
           return cartItem ? { ...p, stock: Math.max(0, p.stock - cartItem.qty) } : p;
         });
         setProducts(updatedProducts);
@@ -660,9 +663,9 @@
           date: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
           time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
           method: methodName,
-          items: [...cart()],
-          total: totalAmount(),
-          cash: methodName === 'เงินสด' ? cashNum() : totalAmount(),
+          items: currentCart,
+          total: currentTotal,
+          cash: methodName === 'เงินสด' ? cashNum() : currentTotal,
           change: methodName === 'เงินสด' ? changeAmount() : 0,
           breakdown: methodName === 'เงินสด' ? changeBreakdown() : []
         };
@@ -671,6 +674,37 @@
         setSalesHistory([receipt, ...salesHistory()]);
         setCompletedReceipt(receipt);
         setActivePaymentType(null);
+
+        // POST Sales Data to Google Apps Script Web App URL
+        const salesDataPayload = {
+          action: 'recordSale',
+          billId: receipt.id,
+          totalAmount: currentTotal,
+          paymentType: methodName,
+          items: currentCart.map(item => ({
+            productID: item.productID,
+            productName: item.productName,
+            price: item.price,
+            qty: item.qty,
+            subtotal: item.price * item.qty
+          }))
+        };
+
+        try {
+          fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(salesDataPayload)
+          }).then(res => res.json())
+            .then(data => console.log('Successfully recorded sale to Google Sheets:', data))
+            .catch(err => console.log('POST request sent to Google Apps Script Web App'));
+        } catch (e) {
+          console.error('Error posting sale data to Google Apps Script:', e);
+        }
+
+        // Clear cart for next order
+        setCart([]);
+        setCashInput('');
       };
 
       const finishOrder = () => {
