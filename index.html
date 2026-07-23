@@ -1581,7 +1581,7 @@
               <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
                 <div class="flex items-center justify-between border-b border-slate-200 pb-3">
                   <h3 class="font-normal text-3xl text-slate-900 flex items-center gap-2">
-                    <span>📲 โอนเงินเข้าบัญชี (พร้อมเพย์)</span>
+                    <span>📲 โอนเงิน / สแกน QR Code</span>
                   </h3>
                   <button 
                     onClick=${() => setActivePaymentType(null)}
@@ -1591,32 +1591,45 @@
                   </button>
                 </div>
 
-                <div class="bg-sky-50 text-slate-900 p-5 rounded-3xl border border-sky-200 flex flex-col items-center gap-3">
-                  <span class="text-sm font-normal bg-sky-100 text-sky-950 px-4 py-1 rounded-full border border-sky-300">
-                    สแกน QR Code พร้อมเพย์เพื่อชำระเงิน
-                  </span>
-                  
-                  <div class="p-3 bg-white border-2 border-slate-900 rounded-2xl shadow">
-                    <svg class="w-48 h-48" viewBox="0 0 100 100" fill="currentColor">
-                      <path d="M0 0h35v35H0zM5 5v25h25V5zm5 5h15v15H10zM65 0h35v35H65zM70 5v25h25V5zm5 5h15v15H75zM0 65h35v35H0zM5 70v25h25V70zm5 5h15v15H10zM40 10h5v15h-5zM50 10h10v5H50zM40 30h20v5H40zM70 40h15v5H70zM40 50h10v20H40zM60 50h15v5H60zM80 60h15v35H80zm5 5v25h5V65zM50 80h25v5H50z" />
-                    </svg>
+                <div class="bg-sky-50 text-slate-900 p-5 rounded-3xl border-2 border-sky-200 flex flex-col items-center gap-3">
+                  <!-- 1. Super Large Dark Navy Total Amount Text OVER QR Code -->
+                  <div class="w-full text-center py-2 bg-white rounded-2xl border-2 border-sky-300 shadow-sm">
+                    <span class="text-lg font-semibold text-slate-700 block mb-1">ยอดเงินรวมที่ต้องชำระ:</span>
+                    <div class="text-slate-950 font-bold text-5xl sm:text-6xl text-sky-950 tracking-tight">
+                      ฿${totalAmount().toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <!-- 2. Dynamic Real-Time PromptPay QR Code Graphic -->
+                  <div class="p-3 bg-white border-4 border-slate-900 rounded-3xl shadow-lg my-1 flex flex-col items-center gap-2">
+                    <div class="bg-sky-900 text-white font-bold text-base px-4 py-1 rounded-lg w-full flex items-center justify-center gap-2">
+                      <span>🇹🇭 PromptPay</span>
+                      <span class="text-xs bg-sky-600 px-2 py-0.5 rounded">พร้อมเพย์</span>
+                    </div>
+                    <img 
+                      src="https://promptpay.io/0812345678/${totalAmount()}.png" 
+                      alt="PromptPay QR Code ฿${totalAmount()}"
+                      class="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl border border-slate-200 shadow-inner"
+                      onError=${(e) => {
+                        // Fallback to high resolution generated PromptPay card image
+                        e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=0812345678';
+                      }}
+                    />
+                    <span class="text-xs text-slate-500 font-normal">สแกนจ่ายได้ทุกแอปธนาคาร</span>
                   </div>
 
                   <div class="text-center font-normal">
-                    <p class="text-base text-slate-700">ชื่อบัญชี: สุวรรณ การค้า</p>
-                    <p class="text-xl text-sky-900 font-medium">พร้อมเพย์: 081-234-5678</p>
-                  </div>
-
-                  <div class="bg-slate-900 text-sky-400 px-5 py-2.5 rounded-2xl border border-sky-500 font-normal text-3xl w-full shadow">
-                    ยอดโอน: ฿${totalAmount().toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    <p class="text-lg text-slate-800">ชื่อบัญชี: <span class="font-bold text-slate-950">สุวรรณ การค้า</span></p>
+                    <p class="text-2xl text-sky-900 font-bold">พร้อมเพย์: 081-234-5678</p>
                   </div>
                 </div>
 
+                <!-- 3. Large Bright Sky Blue Confirm Button -->
                 <button 
                   onClick=${() => completePayment('โอนเข้าบัญชี (พร้อมเพย์)')}
-                  class="senior-btn py-4 bg-sky-600 hover:bg-sky-700 text-white font-normal text-2xl rounded-2xl shadow-xl border border-sky-500"
+                  class="senior-btn py-5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-2xl sm:text-3xl rounded-3xl shadow-xl border-2 border-sky-400 flex items-center justify-center gap-2"
                 >
-                  ✅ ตรวจสอบเงินเข้าแล้ว & ยืนยัน
+                  <span>✅ กดยืนยันรับเงินเรียบร้อย</span>
                 </button>
               </div>
             </div>
