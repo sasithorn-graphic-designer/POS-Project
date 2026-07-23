@@ -952,16 +952,16 @@
                     ` : ''}
                   </div>
 
-                  <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                  <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
                     ${() => categoriesList().map(cat => html`
                       <button 
                         onClick=${() => {
                           setSelectedCategory(cat);
                           playAudioTone('click');
                         }}
-                        class="senior-btn whitespace-nowrap px-4 py-2.5 rounded-2xl font-normal flex items-center gap-2 text-lg border shadow-sm ${() => selectedCategory() === cat ? 'bg-sky-600 border-sky-700 text-white shadow-md' : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'}"
+                        class="senior-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl font-normal flex items-center gap-1.5 text-sm sm:text-base border transition-all ${() => selectedCategory() === cat ? 'bg-sky-600 border-sky-600 text-white shadow-sm font-medium' : 'bg-sky-50/80 border-sky-200 text-sky-900 hover:bg-sky-100'}"
                       >
-                        <span class="text-xl">${getCategoryEmoji(cat)}</span>
+                        <span class="text-base sm:text-lg">${getCategoryEmoji(cat)}</span>
                         <span>${cat}</span>
                       </button>
                     `)}
