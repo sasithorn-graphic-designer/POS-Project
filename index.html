@@ -959,9 +959,9 @@
                           setSelectedCategory(cat);
                           playAudioTone('click');
                         }}
-                        class="senior-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl font-normal flex items-center gap-1.5 text-sm sm:text-base border transition-all ${() => selectedCategory() === cat ? 'bg-sky-600 border-sky-600 text-white shadow-sm font-medium' : 'bg-sky-50/80 border-sky-200 text-sky-900 hover:bg-sky-100'}"
+                        class="senior-btn whitespace-nowrap px-3 py-1 rounded-lg font-normal flex items-center gap-1.5 text-xs sm:text-sm border transition-all ${() => selectedCategory() === cat ? 'bg-sky-600 border-sky-600 text-white shadow-sm font-medium' : 'bg-slate-100/90 border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900'}"
                       >
-                        <span class="text-base sm:text-lg">${getCategoryEmoji(cat)}</span>
+                        <span class="text-sm sm:text-base">${getCategoryEmoji(cat)}</span>
                         <span>${cat}</span>
                       </button>
                     `)}
@@ -1601,20 +1601,20 @@
                       <span class="text-xs bg-sky-600 px-2 py-0.5 rounded">พร้อมเพย์</span>
                     </div>
                     <img 
-                      src="https://promptpay.io/0812345678/${totalAmount()}.png" 
+                      src="https://promptpay.io/0824829169/${totalAmount()}.png" 
                       alt="PromptPay QR Code ฿${totalAmount()}"
                       class="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl border border-slate-200 shadow-inner"
                       onError=${(e) => {
                         // Fallback to high resolution generated PromptPay card image
-                        e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=0812345678';
+                        e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=0824829169';
                       }}
                     />
                     <span class="text-xs text-slate-500 font-normal">สแกนจ่ายได้ทุกแอปธนาคาร</span>
                   </div>
 
                   <div class="text-center font-normal">
-                    <p class="text-lg text-slate-800">ชื่อบัญชี: <span class="font-bold text-slate-950">สุวรรณ การค้า</span></p>
-                    <p class="text-2xl text-sky-900 font-bold">พร้อมเพย์: 081-234-5678</p>
+                    <p class="text-lg text-slate-800">ชื่อบัญชี: <span class="font-bold text-slate-950">นางสุวรรณา คล้ายสุวรรณ์</span></p>
+                    <p class="text-2xl text-sky-900 font-bold">พร้อมเพย์: 082-482-9169</p>
                   </div>
                 </div>
 
