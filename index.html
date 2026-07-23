@@ -988,49 +988,44 @@
                         return html`
                           <div 
                             onClick=${() => !isOutOfStock && addToCart(product)}
-                            class="senior-card cursor-pointer bg-white border-2 border-slate-200 hover:border-sky-500 p-4 sm:p-5 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between group overflow-hidden ${isOutOfStock ? 'opacity-40 cursor-not-allowed' : ''}"
+                            class="senior-card cursor-pointer bg-white border-2 border-slate-200 hover:border-sky-500 p-5 rounded-[24px] shadow-sm hover:shadow-xl transition-all flex flex-col justify-between group overflow-hidden ${isOutOfStock ? 'opacity-40 cursor-not-allowed' : ''}"
                           >
-                            <!-- 1. Product Image -->
-                            <div class="relative w-full aspect-[4/3] mb-3 bg-slate-50 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-200 shadow-inner">
-                              <img 
-                                src="${getProductImage(product)}" 
-                                alt="${product.productName}"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError=${(e) => { e.target.style.display = 'none'; }}
-                              />
-                              <span class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-sm text-slate-900 border border-slate-300 px-3 py-1 rounded-xl text-xs sm:text-sm font-normal shadow-sm">
+                            <!-- 1. Category & Product Code Badge (No Image) -->
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                              <span class="bg-slate-100 text-slate-800 border border-slate-300 px-3.5 py-1 rounded-xl text-sm font-normal">
                                 ${getCategoryEmoji(product.category)} ${product.category}
                               </span>
+                              <span class="text-xs text-slate-500 font-normal border border-slate-200 px-2 py-0.5 rounded-lg bg-slate-50">#${product.productID}</span>
                             </div>
 
-                            <!-- 2. Product Name (Regular Weight for Clean Airy Look) -->
-                            <h3 class="font-normal text-slate-900 text-xl sm:text-2xl leading-snug mb-1 group-hover:text-sky-600 transition-colors">
+                            <!-- 2. Product Name (Large Regular Weight Text) -->
+                            <h3 class="font-normal text-slate-900 text-2xl sm:text-3xl leading-snug my-2 group-hover:text-sky-600 transition-colors">
                               ${mainName}
                             </h3>
 
                             <!-- 3. Size Spec & Stock -->
                             <div class="flex flex-wrap items-center gap-2 my-2">
                               ${sizeSpec ? html`
-                                <span class="bg-slate-100 text-slate-800 font-normal border border-slate-300 px-3 py-0.5 rounded-xl text-sm sm:text-base">
+                                <span class="bg-slate-100 text-slate-800 font-normal border border-slate-300 px-3 py-1 rounded-xl text-base">
                                   📏 ${sizeSpec}
                                 </span>
                               ` : ''}
-                              <span class="font-normal px-3 py-0.5 rounded-xl text-sm sm:text-base border ${remainingStock > 3 ? 'bg-sky-50 text-sky-900 border-sky-200' : remainingStock > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-200 text-slate-600 border-slate-400'}">
+                              <span class="font-normal px-3 py-1 rounded-xl text-base border ${remainingStock > 3 ? 'bg-sky-50 text-sky-900 border-sky-200' : remainingStock > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-200 text-slate-600 border-slate-400'}">
                                 ${isOutOfStock ? '❌ สต็อคหมด' : `คงเหลือ: ${remainingStock} ชิ้น`}
                               </span>
                             </div>
 
                             <!-- 4. Price & Click Hint -->
-                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
+                            <div class="pt-4 border-t border-slate-100 flex items-center justify-between mt-3">
                               <div>
                                 <span class="text-xs font-normal text-slate-500 block">ราคาขาย</span>
-                                <span class="text-sky-600 font-normal text-3xl sm:text-4xl tracking-tight">
+                                <span class="text-sky-600 font-normal text-4xl sm:text-5xl tracking-tight">
                                   ฿${product.price.toLocaleString('th-TH')}
                                 </span>
                               </div>
 
-                              <span class="text-xs sm:text-sm font-normal text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl flex items-center gap-1 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-500 transition-colors">
-                                <span>👆 แตะการ์ดเพื่อเลือก</span>
+                              <span class="text-xs sm:text-sm font-normal text-sky-700 bg-sky-50 border border-sky-200 px-3.5 py-2 rounded-xl flex items-center gap-1 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-500 transition-colors">
+                                <span>👆 แตะเพื่อเลือก</span>
                               </span>
                             </div>
 
@@ -1085,7 +1080,6 @@
                           <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between gap-2 shadow-sm">
                             
                             <div class="flex items-center gap-3 flex-1 min-w-0 pr-2">
-                              <img src="${getProductImage(item)}" alt="${item.productName}" class="w-12 h-12 object-cover rounded-xl border border-slate-300 shadow-sm hidden sm:block" />
                               <div class="min-w-0">
                                 <h4 class="font-normal text-slate-900 text-base sm:text-lg leading-tight truncate">${mainName}</h4>
                                 ${sizeSpec ? html`<span class="text-xs font-normal text-slate-500 block">${sizeSpec}</span>` : ''}
