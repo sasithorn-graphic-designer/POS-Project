@@ -405,14 +405,79 @@
       const [cashInput, setCashInput] = createSignal('');
       const [completedReceipt, setCompletedReceipt] = createSignal(null);
       
-      // History State
+      // Dashboard Date Range Filter State ('today' | '7days' | '1month' | '3months' | '1year')
+      const [dateFilterRange, setDateFilterRange] = createSignal('today');
+
+      // Initial Rich Sales History with Timestamps & Item Details
+      const NOW_MS = Date.now();
+      const DAY_MS = 86400000;
       const [salesHistory, setSalesHistory] = createSignal([
-        { id: 'BILL-1001', date: '23/07/2026', time: '10:15', method: 'เงินสด', total: 185, cash: 200, change: 15 },
-        { id: 'BILL-1002', date: '23/07/2026', time: '11:30', method: 'โอนเข้าบัญชี (พร้อมเพย์)', total: 320, cash: 320, change: 0 },
-        { id: 'BILL-1003', date: '23/07/2026', time: '13:45', method: 'โครงการธงฟ้าประชารัฐ', total: 450, cash: 450, change: 0 },
-        { id: 'BILL-1004', date: '23/07/2026', time: '15:20', method: 'โครงการไทยช่วยไทย', total: 210, cash: 210, change: 0 },
-        { id: 'BILL-1005', date: '23/07/2026', time: '17:00', method: 'เงินสด', total: 125, cash: 150, change: 25 }
+        { id: 'BILL-1006', date: new Date(NOW_MS).toLocaleDateString('th-TH'), time: '09:15', timestamp: NOW_MS - 3600000, method: 'เงินสด', total: 185, items: [{ name: 'รสดี ผงปรุงรส รสหมู 155 ก.', qty: 2, price: 25 }, { name: 'เมกาเชฟ น้ำปลา 200 มล.', qty: 3, price: 30 }, { name: 'ฟ้าไทย ผงปรุงรส 75 ก.', qty: 3, price: 15 }] },
+        { id: 'BILL-1005', date: new Date(NOW_MS).toLocaleDateString('th-TH'), time: '08:30', timestamp: NOW_MS - 7200000, method: 'โอนเข้าบัญชี (พร้อมเพย์)', total: 320, items: [{ name: 'หมูสามชั้นสด (1.5 กก.)', qty: 1, price: 270 }, { name: 'เบงเบง เวเฟอร์', qty: 10, price: 5 }] },
+        { id: 'BILL-1004', date: new Date(NOW_MS - DAY_MS * 2).toLocaleDateString('th-TH'), time: '14:20', timestamp: NOW_MS - DAY_MS * 2, method: 'โครงการธงฟ้าประชารัฐ', total: 680, items: [{ name: 'เนื้อวัวบด (2 กก.)', qty: 1, price: 480 }, { name: 'สามแม่ครัว ปลาซาร์ดีน', qty: 5, price: 22 }, { name: 'ฟ้าไทย ผงปรุงรส 75 ก.', qty: 6, price: 15 }] },
+        { id: 'BILL-1003', date: new Date(NOW_MS - DAY_MS * 5).toLocaleDateString('th-TH'), time: '16:45', timestamp: NOW_MS - DAY_MS * 5, method: 'โครงการไทยช่วยไทย', total: 1250, items: [{ name: 'หมูสามชั้นสด (5 กก.)', qty: 1, price: 900 }, { name: 'อกไก่สด (3 กก.)', qty: 1, price: 270 }, { name: 'โอรีโอ คุกกี้', qty: 16, price: 5 }] },
+        { id: 'BILL-1002', date: new Date(NOW_MS - DAY_MS * 20).toLocaleDateString('th-TH'), time: '11:10', timestamp: NOW_MS - DAY_MS * 20, method: 'เงินสด', total: 2450, items: [{ name: 'เนื้อวัวบด (5 กก.)', qty: 1, price: 1200 }, { name: 'รสดี ผงปรุงรส 155 ก.', qty: 20, price: 25 }, { name: 'เมกาเชฟ น้ำปลา 200 มล.', qty: 25, price: 30 }] },
+        { id: 'BILL-1001', date: new Date(NOW_MS - DAY_MS * 60).toLocaleDateString('th-TH'), time: '13:00', timestamp: NOW_MS - DAY_MS * 60, method: 'โอนเข้าบัญชี (พร้อมเพย์)', total: 4800, items: [{ name: 'หมูสามชั้นสด (20 กก.)', qty: 1, price: 3600 }, { name: 'อกไก่สด (10 กก.)', qty: 1, price: 900 }, { name: 'สามแม่ครัว ปลาซาร์ดีน', qty: 13, price: 22 }] },
+        { id: 'BILL-1000', date: new Date(NOW_MS - DAY_MS * 200).toLocaleDateString('th-TH'), time: '15:30', timestamp: NOW_MS - DAY_MS * 200, method: 'เงินสด', total: 9500, items: [{ name: 'เนื้อวัวบด (30 กก.)', qty: 1, price: 7200 }, { name: 'รสดี ผงปรุงรส 155 ก.', qty: 50, price: 25 }, { name: 'เมกาเชฟ น้ำปลา 200 มล.', qty: 35, price: 30 }] }
       ]);
+
+      // Filtered Sales Records based on Selected Range
+      const dashboardFilteredSales = createMemo(() => {
+        const range = dateFilterRange();
+        const now = Date.now();
+        const DAY = 86400000;
+        let cutoff = 0;
+
+        if (range === 'today') {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          cutoff = d.getTime();
+        } else if (range === '7days') {
+          cutoff = now - 7 * DAY;
+        } else if (range === '1month') {
+          cutoff = now - 30 * DAY;
+        } else if (range === '3months') {
+          cutoff = now - 90 * DAY;
+        } else if (range === '1year') {
+          cutoff = now - 365 * DAY;
+        }
+
+        return salesHistory().filter(item => {
+          if (!item.timestamp) return true;
+          return item.timestamp >= cutoff;
+        });
+      });
+
+      // Filtered Dashboard Metrics
+      const dashboardMetrics = createMemo(() => {
+        const sales = dashboardFilteredSales();
+        const totalRev = sales.reduce((sum, r) => sum + (r.total || 0), 0);
+        const count = sales.length;
+        const avgBill = count > 0 ? totalRev / count : 0;
+
+        // Top selling products aggregation
+        const productSalesMap = {};
+        sales.forEach(bill => {
+          if (bill.items && Array.isArray(bill.items)) {
+            bill.items.forEach(item => {
+              const name = item.name || item.productName || 'สินค้าทั่วไป';
+              const qty = item.qty || 1;
+              const revenue = (item.price || 0) * qty;
+              if (!productSalesMap[name]) {
+                productSalesMap[name] = { name, qty: 0, revenue: 0 };
+              }
+              productSalesMap[name].qty += qty;
+              productSalesMap[name].revenue += revenue;
+            });
+          }
+        });
+
+        const topProducts = Object.values(productSalesMap)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+
+        return { totalRev, count, avgBill, topProducts };
+      });
 
       // Daily Closure State
       const [closureLoading, setClosureLoading] = createSignal(false);
@@ -1481,138 +1546,214 @@
             </div>
           ` : ''}
 
-          <!-- TAB 2: DASHBOARD ANALYTICS VIEW -->
+          <!-- TAB 2: DASHBOARD ANALYTICS VIEW WITH DATE FILTER RANGE -->
           ${() => activeTab() === 'dashboard' ? html`
-            <div class="flex-1 max-w-[1920px] mx-auto w-full p-4 sm:p-6 flex flex-col gap-6 font-normal">
+            <div class="flex-1 max-w-[1920px] mx-auto w-full p-3 sm:p-6 flex flex-col gap-5 font-normal">
               
-              <!-- SUMMARY METRICS CARDS -->
+              <!-- DATE FILTER RANGE TOOLBAR (วันนี้, 7 วัน, 1 เดือน, 3 เดือน, 1 ปี) -->
+              <div class="bg-white p-4 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl sm:text-3xl">📅</span>
+                  <div>
+                    <h3 class="font-normal text-xl sm:text-2xl text-slate-900 leading-tight">เลือกช่วงเวลาดูรายงาน:</h3>
+                    <span class="text-xs sm:text-sm text-slate-500 font-normal">กรองข้อมูลยอดขาย บิล และสินค้าขายดีแบบไดนามิก</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                  ${[
+                    { id: 'today', label: 'วันนี้' },
+                    { id: '7days', label: '7 วัน' },
+                    { id: '1month', label: '1 เดือน' },
+                    { id: '3months', label: '3 เดือน' },
+                    { id: '1year', label: '1 ปี' }
+                  ].map(r => html`
+                    <button 
+                      onClick=${() => {
+                        setDateFilterRange(r.id);
+                        playAudioTone('click');
+                      }}
+                      class="senior-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm sm:text-base transition-all border ${() => dateFilterRange() === r.id ? 'bg-sky-600 border-sky-500 text-white font-bold shadow-md scale-105' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'}"
+                    >
+                      ${r.label}
+                    </button>
+                  `)}
+                </div>
+              </div>
+
+              <!-- SUMMARY METRICS CARDS (FILTERED DYNAMICALLY) -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-lg">ยอดขายวันนี้</span>
+                    <span class="font-normal text-slate-600 text-base sm:text-lg">ยอดขายรวมช่วงเวลา</span>
                     <span class="text-3xl">☀️</span>
                   </div>
                   <div class="my-2">
-                    <div class="text-sky-600 font-normal text-4xl sm:text-5xl tracking-tight">
-                      ฿${() => salesHistory().reduce((s, r) => s + r.total, 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
+                      ฿${() => dashboardMetrics().totalRev.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                   <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>จำนวนบิลวันนี้:</span>
-                    <span class="text-slate-900 font-medium">${() => salesHistory().length} บิล</span>
+                    <span>จำนวนบิลทั้งหมด:</span>
+                    <span class="text-slate-900 font-medium">${() => dashboardMetrics().count} บิล</span>
                   </div>
                 </div>
 
                 <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-lg">ยอดขาย 7 วันล่าสุด</span>
-                    <span class="text-3xl">📅</span>
-                  </div>
-                  <div class="my-2">
-                    <div class="text-sky-600 font-normal text-4xl sm:text-5xl tracking-tight">
-                      ฿${() => (salesHistory().reduce((s, r) => s + r.total, 0) + 14400).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>แนวโน้มการขาย:</span>
-                    <span class="text-sky-700 font-medium">📈 เติบโตขึ้น 14%</span>
-                  </div>
-                </div>
-
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
-                  <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-lg">ยอดขายประจำเดือนนี้</span>
-                    <span class="text-3xl">🏆</span>
-                  </div>
-                  <div class="my-2">
-                    <div class="text-sky-600 font-normal text-4xl sm:text-5xl tracking-tight">
-                      ฿${() => (salesHistory().reduce((s, r) => s + r.total, 0) + 45800).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>เป้าหมายยอดขาย:</span>
-                    <span class="text-slate-900 font-medium">92% ของเป้า</span>
-                  </div>
-                </div>
-
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
-                  <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-lg">ยอดขายเฉลี่ยต่อบิล</span>
+                    <span class="font-normal text-slate-600 text-base sm:text-lg">จำนวนรายการขาย</span>
                     <span class="text-3xl">🧾</span>
                   </div>
                   <div class="my-2">
-                    <div class="text-sky-600 font-normal text-4xl sm:text-5xl tracking-tight">
-                      ฿${() => {
-                        const len = salesHistory().length;
-                        if (len === 0) return '0.00';
-                        return (salesHistory().reduce((s, r) => s + r.total, 0) / len).toFixed(2);
-                      }}
+                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
+                      ${() => dashboardMetrics().count} บิล
                     </div>
                   </div>
                   <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>สถานะระบบ:</span>
-                    <span class="text-sky-700 font-medium">🟢 พร้อมใช้งาน</span>
+                    <span>สถานะข้อมูล:</span>
+                    <span class="text-sky-700 font-medium">🟢 ซิงค์ Google Sheets</span>
+                  </div>
+                </div>
+
+                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                  <div class="flex items-center justify-between">
+                    <span class="font-normal text-slate-600 text-base sm:text-lg">ยอดขายเฉลี่ยต่อบิล</span>
+                    <span class="text-3xl">📊</span>
+                  </div>
+                  <div class="my-2">
+                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
+                      ฿${() => dashboardMetrics().avgBill.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
+                    <span>เฉลี่ยต่อตะกร้า:</span>
+                    <span class="text-slate-900 font-medium">฿${() => dashboardMetrics().avgBill.toFixed(0)}</span>
+                  </div>
+                </div>
+
+                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                  <div class="flex items-center justify-between">
+                    <span class="font-normal text-slate-600 text-base sm:text-lg">สินค้าขายดีอันดับ 1</span>
+                    <span class="text-3xl">🏆</span>
+                  </div>
+                  <div class="my-2 truncate">
+                    <div class="text-slate-900 font-normal text-xl sm:text-2xl truncate">
+                      ${() => dashboardMetrics().topProducts[0] ? dashboardMetrics().topProducts[0].name : 'ไม่มีข้อมูล'}
+                    </div>
+                    <span class="text-sky-600 text-lg sm:text-xl font-medium block">
+                      ${() => dashboardMetrics().topProducts[0] ? `฿${dashboardMetrics().topProducts[0].revenue.toLocaleString('th-TH')}` : ''}
+                    </span>
+                  </div>
+                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
+                    <span>จำนวนขาย:</span>
+                    <span class="text-sky-700 font-medium">
+                      ${() => dashboardMetrics().topProducts[0] ? `${dashboardMetrics().topProducts[0].qty} ชิ้น` : '0 ชิ้น'}
+                    </span>
                   </div>
                 </div>
 
               </div>
 
-              <!-- CHARTS SECTION -->
+              <!-- TOP SELLING PRODUCTS & CHARTS SECTION -->
               <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 
-                <div class="lg:col-span-7 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3 min-h-[380px]">
+                <!-- TOP 5 SELLING PRODUCTS LIST -->
+                <div class="lg:col-span-5 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3">
                   <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                     <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
-                      <span>📈 แนวโน้มยอดขายรายวัน 7 วันล่าสุด</span>
+                      <span>🏆 5 อันดับสินค้าขายดี (ช่วงเวลาที่เลือก)</span>
                     </h3>
                   </div>
-                  <div class="flex-1 relative w-full h-[300px]">
+
+                  <div class="flex flex-col gap-2.5 my-1">
+                    ${() => {
+                      const topList = dashboardMetrics().topProducts;
+                      if (topList.length === 0) {
+                        return html`<p class="text-slate-500 py-6 text-center">ไม่มีข้อมูลรายการขายในช่วงเวลานี้</p>`;
+                      }
+                      return topList.map((item, index) => html`
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
+                          <div class="flex items-center gap-3 min-w-0">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-base ${index === 0 ? 'bg-amber-400 text-amber-950' : index === 1 ? 'bg-slate-300 text-slate-900' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'}">
+                              ${index + 1}
+                            </span>
+                            <div class="min-w-0">
+                              <h4 class="font-normal text-slate-900 text-base sm:text-lg truncate">${item.name}</h4>
+                              <span class="text-xs text-slate-500 font-normal block">จำนวนขาย: ${item.qty} ชิ้น</span>
+                            </div>
+                          </div>
+                          <div class="text-right shrink-0">
+                            <span class="text-sky-700 font-normal text-lg sm:text-xl">
+                              ฿${item.revenue.toLocaleString('th-TH')}
+                            </span>
+                          </div>
+                        </div>
+                      `);
+                    }}
+                  </div>
+                </div>
+
+                <!-- CHARTS CANVAS -->
+                <div class="lg:col-span-7 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3 min-h-[360px]">
+                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
+                      <span>📈 แนวโน้มยอดขายตามช่วงเวลา</span>
+                    </h3>
+                  </div>
+                  <div class="flex-1 relative w-full h-[280px]">
                     <canvas id="revenueTrendChart"></canvas>
                   </div>
                 </div>
 
-                <div class="lg:col-span-5 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3 min-h-[380px]">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
-                      <span>💳 สัดส่วนช่องทางชำระเงิน</span>
-                    </h3>
-                  </div>
-                  <div class="flex-1 relative w-full h-[300px] flex items-center justify-center">
-                    <canvas id="paymentMethodChart"></canvas>
-                  </div>
-                </div>
-
               </div>
 
-              <!-- RECENT TRANSACTIONS TABLE -->
+              <!-- RECENT TRANSACTIONS TABLE (FILTERED BY DATE RANGE) -->
               <div class="bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3">
-                <h3 class="font-normal text-2xl text-slate-900">📋 รายการขายล่าสุดวันนี้ (สุวรรณ การค้า)</h3>
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 class="font-normal text-2xl text-slate-900">📋 รายการขายตามช่วงเวลาที่เลือก (สุวรรณ การค้า)</h3>
+                  <span class="text-sm bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-medium">
+                    ${() => dashboardFilteredSales().length} รายการ
+                  </span>
+                </div>
+
                 <div class="overflow-x-auto">
                   <table class="w-full text-left border-collapse">
                     <thead>
                       <tr class="bg-slate-100 text-slate-700 text-base font-normal border-b-2 border-slate-300">
                         <th class="p-3">เลขที่บิล</th>
-                        <th class="p-3">เวลา</th>
+                        <th class="p-3">วันที่ / เวลา</th>
                         <th class="p-3">ช่องทางชำระเงิน</th>
                         <th class="p-3 text-right">ยอดเงินรวม</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 text-base font-normal">
-                      ${() => salesHistory().map(item => html`
-                        <tr class="hover:bg-slate-50">
-                          <td class="p-3 font-normal text-sky-700">${item.id}</td>
-                          <td class="p-3 text-slate-600">${item.time}</td>
-                          <td class="p-3">
-                            <span class="bg-slate-100 border border-slate-300 px-3 py-1 rounded-xl text-slate-800 font-normal text-sm">
-                              ${item.method}
-                            </span>
-                          </td>
-                          <td class="p-3 text-right font-normal text-sky-700 text-xl">
-                            ฿${item.total.toFixed(2)}
-                          </td>
-                        </tr>
-                      `)}
+                      ${() => {
+                        const list = dashboardFilteredSales();
+                        if (list.length === 0) {
+                          return html`
+                            <tr>
+                              <td colspan="4" class="p-6 text-center text-slate-500">
+                                ไม่พบรายการขายในช่วงเวลานี้
+                              </td>
+                            </tr>
+                          `;
+                        }
+                        return list.map(item => html`
+                          <tr class="hover:bg-slate-50">
+                            <td class="p-3 font-normal text-sky-700">${item.id}</td>
+                            <td class="p-3 text-slate-600">${item.date || ''} ${item.time || ''}</td>
+                            <td class="p-3">
+                              <span class="bg-slate-100 border border-slate-300 px-3 py-1 rounded-xl text-slate-800 font-normal text-sm">
+                                ${item.method}
+                              </span>
+                            </td>
+                            <td class="p-3 text-right font-normal text-sky-700 text-xl">
+                              ฿${(item.total || 0).toFixed(2)}
+                            </td>
+                          </tr>
+                        `);
+                      }}
                     </tbody>
                   </table>
                 </div>
