@@ -358,7 +358,7 @@
     }
 
     const API_URL = 'https://script.google.com/macros/s/AKfycbwPlgoPJacGVdma4UKWparazPkjjlE-_7Un_QUe7x1aqZghXKcDAEi3W6zgklWv-YXYHA/exec';
-    const SALES_POST_URL = 'https://script.google.com/macros/s/AKfycbxx8SLI5tzJJrLdyZmbO5vjTnupSqWCNcji6PB9IZvtPpoERdY8YnHf3eIFk7PsUUMVkA/exec';
+    const SALES_POST_URL = 'https://script.google.com/macros/s/AKfycbzRTJRRVYVzWMb71yBAX3muHHz9Kl_LKQNzRRdiz1uesG6kmkEr11AxZH3KgFTn4E4Sog/exec';
 
     // 5. Main Single Page Application Component
     function POSApp() {
@@ -728,12 +728,18 @@
         setCompletedReceipt(receipt);
         setActivePaymentType(null);
 
-        // POST Sales Data to new Google Apps Script Web App URL with no-cors mode
+        // POST Sales Data to Google Apps Script Web App URL with items array & no-cors mode
         const salesDataPayload = {
           orderId: "ORD-" + Date.now(),
           totalAmount: currentTotal,
           paymentType: methodName,
-          cashier: "เจ้าของร้าน"
+          cashier: "เจ้าของร้าน",
+          items: currentCart.map(item => ({
+            id: item.productID || item.productName,
+            name: item.productName,
+            qty: item.qty,
+            price: item.price
+          }))
         };
 
         try {
