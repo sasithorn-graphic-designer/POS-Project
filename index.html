@@ -328,6 +328,9 @@
       return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80';
     }
 
+    // Global search query fallback
+    let searchQuery = '';
+
     // 4. Initial Products Database
     const INITIAL_PRODUCTS = [
       { productID: 1, productName: 'เบงเบง เวเฟอร์สอดไส้เคลือบช็อกโกแลต 20 ก.', category: 'ขนมขบเคี้ยว', price: 5, stock: 12 },
@@ -367,6 +370,17 @@
       const [loading, setLoading] = createSignal(false);
       const [apiError, setApiError] = createSignal(null);
       const [lastFetchTime, setLastFetchTime] = createSignal('');
+
+      // Controls & Search State
+      const [soundEnabled, setSoundEnabled] = createSignal(true);
+      const [searchQuerySignal, setSearchQuerySignal] = createSignal('');
+      
+      const searchQuery = () => searchQuerySignal();
+      const setSearchQuery = (val) => {
+        const v = String(val || '');
+        try { window.searchQuery = v; } catch (e) {}
+        setSearchQuerySignal(v);
+      };
 
       // Navigation & Modals State
       const [sidebarOpen, setSidebarOpen] = createSignal(false);
@@ -457,15 +471,21 @@
         return ['ทั้งหมด', ...Array.from(cats)];
       });
 
-      // Filtered Products
+      // Filtered Products with try...catch protection
       const filteredProducts = createMemo(() => {
-        const q = searchQuery().trim().toLowerCase();
-        const cat = selectedCategory();
-        return products().filter(p => {
-          const matchCat = cat === 'ทั้งหมด' || p.category === cat;
-          const matchSearch = !q || p.productName.toLowerCase().includes(q) || String(p.productID).includes(q);
-          return matchCat && matchSearch;
-        });
+        try {
+          const q = String(searchQuery() || '').trim().toLowerCase();
+          const cat = selectedCategory();
+          return products().filter(p => {
+            if (!p) return false;
+            const matchCat = cat === 'ทั้งหมด' || p.category === cat;
+            const matchSearch = !q || (p.productName && p.productName.toLowerCase().includes(q)) || String(p.productID).includes(q);
+            return matchCat && matchSearch;
+          });
+        } catch (err) {
+          console.error("Filtered products error caught safely:", err);
+          return products();
+        }
       });
 
       // Cart Totals
@@ -572,31 +592,35 @@
         }
       };
 
-      // Barcode Submit Handler
+      // Barcode Submit Handler with try...catch protection
       const handleBarcodeSubmit = (val) => {
-        const inputStr = String(val || '').trim();
-        if (!inputStr) return;
+        try {
+          const inputStr = String(val || '').trim();
+          if (!inputStr) return;
 
-        const exactMatch = products().find(p => String(p.productID) === inputStr);
-        if (exactMatch) {
-          addToCart(exactMatch);
-          setSearchQuery('');
-          const barcodeInputEl = document.getElementById('barcode-input');
-          if (barcodeInputEl) barcodeInputEl.value = '';
-          return;
+          const exactMatch = products().find(p => p && String(p.productID) === inputStr);
+          if (exactMatch) {
+            addToCart(exactMatch);
+            setSearchQuery('');
+            const barcodeInputEl = document.getElementById('barcode-input');
+            if (barcodeInputEl) barcodeInputEl.value = '';
+            return;
+          }
+
+          const matches = filteredProducts();
+          if (matches && matches.length === 1) {
+            addToCart(matches[0]);
+            setSearchQuery('');
+            const barcodeInputEl = document.getElementById('barcode-input');
+            if (barcodeInputEl) barcodeInputEl.value = '';
+            return;
+          }
+
+          playAudioTone('error');
+          speakThai('ไม่พบบาร์โค้ดสินค้านี้ค่ะ');
+        } catch (err) {
+          console.error("Barcode submit error caught safely:", err);
         }
-
-        const matches = filteredProducts();
-        if (matches.length === 1) {
-          addToCart(matches[0]);
-          setSearchQuery('');
-          const barcodeInputEl = document.getElementById('barcode-input');
-          if (barcodeInputEl) barcodeInputEl.value = '';
-          return;
-        }
-
-        playAudioTone('error');
-        speakThai('ไม่พบบาร์โค้ดสินค้านี้ค่ะ');
       };
 
       // Camera Barcode Scanning (html5-qrcode) Helper
