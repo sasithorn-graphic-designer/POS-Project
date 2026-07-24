@@ -1047,13 +1047,14 @@
           ${() => activeTab() === 'pos' ? html`
             <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 p-3 sm:p-5 max-w-[1920px] mx-auto w-full pb-24 lg:pb-5">
               
-              <!-- MOBILE ONLY: COMPACT TOP SUMMARY & QUICK PAYMENT BAR (PLACED AT VERY TOP ON MOBILE) -->
-              <div class="lg:hidden bg-slate-900 text-white p-3.5 rounded-[20px] border-2 border-sky-500 shadow-md flex flex-col gap-2.5">
+              <!-- MOBILE ONLY: COMPACT TOP SUMMARY & CART DETAILS & QUICK PAYMENT BAR -->
+              <div class="lg:hidden bg-slate-900 text-white p-3 sm:p-4 rounded-[20px] border-2 border-sky-500 shadow-md flex flex-col gap-2">
+                <!-- Summary Header -->
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span class="text-xl">🛒</span>
-                    <span class="font-normal text-base text-white">ยอดรวมสินค้า:</span>
-                    <span class="text-xs bg-sky-600 text-white px-2.5 py-0.5 rounded-full font-medium">${totalItemsCount} ชิ้น</span>
+                    <span class="font-normal text-sm sm:text-base text-white">ตะกร้าสินค้า:</span>
+                    <span class="text-xs bg-sky-600 text-white px-2 py-0.5 rounded-full font-medium">${totalItemsCount} ชิ้น</span>
                   </div>
                   <div class="text-right">
                     <span class="text-sky-400 font-normal text-2xl sm:text-3xl tracking-tight">
@@ -1062,6 +1063,20 @@
                   </div>
                 </div>
 
+                <!-- Short Cart Items Summary (If items in cart) -->
+                ${() => cart().length > 0 ? html`
+                  <div class="bg-slate-800/80 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 flex items-center justify-between overflow-x-auto gap-2">
+                    <div class="truncate flex items-center gap-1.5 flex-1 min-w-0">
+                      <span class="text-sky-400 font-medium shrink-0">รายการ:</span>
+                      <span class="truncate text-slate-200">
+                        ${() => cart().map(i => `${i.productName} (x${i.qty})`).join(', ')}
+                      </span>
+                    </div>
+                    <button onClick=${clearCart} class="text-xs text-slate-400 hover:text-white underline shrink-0">ล้าง</button>
+                  </div>
+                ` : ''}
+
+                <!-- Quick Payment Buttons Grid -->
                 <div class="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-800">
                   <button 
                     onClick=${() => openPaymentModal('cash')}
@@ -1155,11 +1170,14 @@
                         onClick=${() => {
                           setSelectedCategory(cat);
                           playAudioTone('click');
+                          if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                            document.activeElement.blur();
+                          }
                         }}
-                        class="senior-btn whitespace-nowrap px-3 py-1 rounded-lg font-normal flex items-center gap-1.5 text-xs sm:text-sm border transition-all ${() => selectedCategory() === cat ? 'bg-sky-600 border-sky-600 text-white shadow-sm font-medium' : 'bg-slate-100/90 border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900'}"
+                        class="senior-btn whitespace-nowrap px-3 py-1 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm border transition-all ${() => selectedCategory() === cat ? 'bg-sky-700 border-sky-800 text-white shadow-md font-bold ring-2 ring-sky-300' : 'bg-sky-600 hover:bg-sky-700 border-sky-600 text-white font-medium shadow-sm'}"
                       >
                         <span class="text-sm sm:text-base">${getCategoryEmoji(cat)}</span>
-                        <span>${cat}</span>
+                        <span class="text-white">${cat}</span>
                       </button>
                     `)}
                   </div>
@@ -1664,46 +1682,46 @@
 
           <!-- MEAT / WEIGHT CALCULATION MODAL WITH UNIT TOGGLE (กก. / กรัม) -->
           ${() => weightModalProduct() ? html`
-            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-              <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
-                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-                  <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+              <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-3 sm:gap-4 text-center my-auto max-h-[95vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <h3 class="font-normal text-xl sm:text-2xl text-slate-900 flex items-center gap-2">
                     <span>🥩 คำนวณราคาสินค้าตามน้ำหนัก</span>
                   </h3>
                   <button 
                     onClick=${() => setWeightModalProduct(null)}
-                    class="senior-btn bg-slate-200 text-slate-800 px-3 py-1 rounded-xl text-lg font-normal"
+                    class="senior-btn bg-slate-200 text-slate-800 px-3 py-1 rounded-xl text-base font-normal"
                   >
                     ✕
                   </button>
                 </div>
 
-                <div class="bg-sky-50 p-4 rounded-2xl border border-sky-200 text-left">
-                  <h4 class="font-normal text-xl text-slate-900">${weightModalProduct().productName}</h4>
-                  <p class="text-slate-700 text-base mt-1">ราคาอ้างอิง: <span class="font-medium text-sky-700 text-xl">฿${weightModalProduct().price} / กก.</span></p>
+                <div class="bg-sky-50 p-3 sm:p-4 rounded-2xl border border-sky-200 text-left">
+                  <h4 class="font-normal text-lg sm:text-xl text-slate-900">${weightModalProduct().productName}</h4>
+                  <p class="text-slate-700 text-sm sm:text-base mt-0.5">ราคาอ้างอิง: <span class="font-medium text-sky-700 text-lg sm:text-xl">฿${weightModalProduct().price} / กก.</span></p>
                 </div>
 
                 <!-- Unit Toggle Buttons: กิโลกรัม (กก.) vs กรัม (ก.) -->
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-slate-800 text-base text-left font-normal">เลือกหน่วยน้ำหนักในการชั่ง:</label>
+                <div class="flex flex-col gap-1">
+                  <label class="text-slate-800 text-sm sm:text-base text-left font-normal">เลือกหน่วยน้ำหนักในการชั่ง:</label>
                   <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-300">
                     <button 
                       onClick=${() => setWeightUnit('kg')}
-                      class="senior-btn py-2.5 rounded-xl text-lg font-normal transition-all ${() => weightUnit() === 'kg' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
+                      class="senior-btn py-2 rounded-xl text-base sm:text-lg font-normal transition-all ${() => weightUnit() === 'kg' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
                     >
                       ⚖️ กิโลกรัม (กก.)
                     </button>
                     <button 
                       onClick=${() => setWeightUnit('g')}
-                      class="senior-btn py-2.5 rounded-xl text-lg font-normal transition-all ${() => weightUnit() === 'g' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
+                      class="senior-btn py-2 rounded-xl text-base sm:text-lg font-normal transition-all ${() => weightUnit() === 'g' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
                     >
                       ⚖️ กรัม (ก.)
                     </button>
                   </div>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                  <label class="text-slate-800 text-lg text-left font-normal">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-slate-800 text-base sm:text-lg text-left font-normal">
                     ${() => weightUnit() === 'kg' ? 'กรอกน้ำหนักที่ชั่งได้ (กิโลกรัม):' : 'กรอกน้ำหนักที่ชั่งได้ (กรัม):'}
                   </label>
                   <div class="relative">
@@ -1720,23 +1738,23 @@
                         if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
                         setWeightInput(val);
                       }}
-                      class="w-full text-center text-4xl font-normal p-3 bg-slate-50 border-2 border-sky-400 rounded-2xl text-slate-900 focus:ring-4 focus:ring-sky-200 focus:bg-white focus:outline-none shadow-inner" 
+                      class="w-full text-center text-3xl sm:text-4xl font-normal p-2.5 sm:p-3 bg-slate-50 border-2 border-sky-400 rounded-2xl text-slate-900 focus:ring-4 focus:ring-sky-200 focus:bg-white focus:outline-none shadow-inner" 
                     />
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-normal text-slate-500">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-lg sm:text-xl font-normal text-slate-500">
                       ${() => weightUnit() === 'kg' ? 'กก.' : 'กรัม'}
                     </span>
                   </div>
                 </div>
 
                 <!-- Quick Weight Buttons -->
-                <div class="grid grid-cols-4 gap-2">
+                <div class="grid grid-cols-4 gap-1.5">
                   ${() => {
                     const isKg = weightUnit() === 'kg';
                     const list = isKg ? ['0.25', '0.5', '1.0', '1.5'] : ['100', '250', '500', '1000'];
                     return list.map(w => html`
                       <button 
                         onClick=${() => setWeightInput(w)} 
-                        class="senior-btn py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-base font-normal"
+                        class="senior-btn py-1.5 sm:py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-sm sm:text-base font-normal"
                       >
                         ${w} ${isKg ? 'กก.' : 'ก.'}
                       </button>
@@ -1745,14 +1763,14 @@
                 </div>
 
                 <!-- Numeric Keypad for Weight Input -->
-                <div class="grid grid-cols-3 gap-2 my-1">
+                <div class="grid grid-cols-3 gap-1.5 my-1">
                   ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => html`
                     <button 
                       onClick=${() => {
                         const current = String(weightInput() || '');
                         setWeightInput(current === '0' ? String(num) : current + num);
                       }}
-                      class="senior-btn py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-normal rounded-xl text-xl shadow-sm"
+                      class="senior-btn py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-normal rounded-xl text-lg sm:text-xl shadow-sm"
                     >
                       ${num}
                     </button>
@@ -1764,7 +1782,7 @@
                         setWeightInput(current ? current + '.' : '0.');
                       }
                     }}
-                    class="senior-btn py-2.5 bg-sky-100 hover:bg-sky-200 border border-sky-300 text-sky-950 font-bold rounded-xl text-2xl shadow-sm"
+                    class="senior-btn py-2 sm:py-2.5 bg-sky-100 hover:bg-sky-200 border border-sky-300 text-sky-950 font-bold rounded-xl text-xl sm:text-2xl shadow-sm"
                   >
                     .
                   </button>
@@ -1773,7 +1791,7 @@
                       const current = String(weightInput() || '');
                       setWeightInput(current === '0' ? '0' : current + '0');
                     }}
-                    class="senior-btn py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-normal rounded-xl text-xl shadow-sm"
+                    class="senior-btn py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-normal rounded-xl text-lg sm:text-xl shadow-sm"
                   >
                     0
                   </button>
@@ -1784,7 +1802,7 @@
                         setWeightInput(current.slice(0, -1));
                       }
                     }}
-                    class="senior-btn py-2.5 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 font-normal rounded-xl text-base shadow-sm"
+                    class="senior-btn py-2 sm:py-2.5 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 font-normal rounded-xl text-sm sm:text-base shadow-sm"
                   >
                     ⌫ ลบ
                   </button>
@@ -1796,11 +1814,11 @@
                   const pricePerKg = weightModalProduct().price;
                   const calculatedPrice = isKg ? Math.round(pricePerKg * val) : Math.round((pricePerKg / 1000) * val);
                   return html`
-                    <div class="bg-slate-900 text-white p-4 rounded-2xl border border-sky-500 text-center shadow-inner">
-                      <span class="text-sm text-slate-300 block font-normal">
+                    <div class="bg-slate-900 text-white p-3 sm:p-4 rounded-2xl border border-sky-500 text-center shadow-inner">
+                      <span class="text-xs sm:text-sm text-slate-300 block font-normal">
                         สูตรคำนวณ: ${isKg ? `${val} กก. x ฿${pricePerKg}` : `${val} กรัม x (฿${pricePerKg}/1000)`}
                       </span>
-                      <span class="text-sky-400 font-normal text-4xl tracking-tight">฿${calculatedPrice.toLocaleString('th-TH')}</span>
+                      <span class="text-sky-400 font-normal text-3xl sm:text-4xl tracking-tight">฿${calculatedPrice.toLocaleString('th-TH')}</span>
                     </div>
                   `;
                 }}
@@ -1829,7 +1847,7 @@
                     addToCart(weightedItem);
                     setWeightModalProduct(null);
                   }}
-                  class="senior-btn py-4 bg-sky-600 hover:bg-sky-700 text-white font-normal text-2xl rounded-2xl shadow-xl border border-sky-500"
+                  class="senior-btn py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-normal text-xl sm:text-2xl rounded-2xl shadow-xl border border-sky-500"
                 >
                   ✅ ตกลงเพิ่มลงตะกร้า
                 </button>
