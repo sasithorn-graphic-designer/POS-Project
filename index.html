@@ -337,11 +337,15 @@
       { productID: 5, productName: 'รสดี ผงปรุงรส รสหมู 155 ก.', category: 'ซอสและเครื่องปรุงรส', price: 25, stock: 10 },
       { productID: 6, productName: 'ฟ้าไทย ผงปรุงรส รสหมู 75 ก.', category: 'ซอสและเครื่องปรุงรส', price: 15, stock: 12 },
       { productID: 7, productName: 'เมกาเชฟ น้ำปลา 200 มล.', category: 'ซอสและเครื่องปรุงรส', price: 30, stock: 6 },
-      { productID: 8, productName: 'ภูเขาทอง ซอสปรุงรส ฝาเขียว 500 มล.', category: 'ซอสและเครื่องปรุงรส', price: 40, stock: 10 }
+      { productID: 8, productName: 'ภูเขาทอง ซอสปรุงรส ฝาเขียว 500 มล.', category: 'ซอสและเครื่องปรุงรส', price: 40, stock: 2 },
+      { productID: 9, productName: 'หมูสามชั้นสด (กก.)', category: 'เนื้อสัตว์', price: 180, stock: 15, isWeighted: true },
+      { productID: 10, productName: 'อกไก่สด (กก.)', category: 'เนื้อสัตว์', price: 90, stock: 20, isWeighted: true },
+      { productID: 11, productName: 'เนื้อวัวบด (กก.)', category: 'เนื้อสัตว์', price: 240, stock: 2, isWeighted: true }
     ];
 
     function getCategoryEmoji(catName) {
       if (!catName) return '📦';
+      if (catName.includes('เนื้อ') || catName.includes('หมู') || catName.includes('ไก่')) return '🥩';
       if (catName.includes('ขนม')) return '🍪';
       if (catName.includes('อาหาร')) return '🥫';
       if (catName.includes('ซอส') || catName.includes('เครื่องปรุง')) return '🧂';
@@ -369,6 +373,10 @@
       const [searchQuery, setSearchQuery] = createSignal('');
       const [selectedCategory, setSelectedCategory] = createSignal('ทั้งหมด');
       const [cameraModalOpen, setCameraModalOpen] = createSignal(false);
+
+      // Weight Calculation Modal State
+      const [weightModalProduct, setWeightModalProduct] = createSignal(null);
+      const [weightInput, setWeightInput] = createSignal('');
 
       // Cart & Payment
       const [cart, setCart] = createSignal([]);
@@ -492,16 +500,26 @@
 
       // Cart Operations
       const addToCart = (product) => {
+        // If product is in 'เนื้อสัตว์' or weighted and not customized yet, trigger weight modal
+        if ((product.category === 'เนื้อสัตว์' || product.isWeighted) && !product._isWeightedCustom) {
+          setWeightModalProduct(product);
+          setWeightInput('');
+          playAudioTone('click');
+          return;
+        }
+
         const current = cart();
         const existing = current.find(i => i.productID === product.productID);
         const qtyInCart = existing ? existing.qty : 0;
 
         if (qtyInCart >= product.stock) {
           playAudioTone('error');
-          speakThai(`สินค้า ${product.productName} เหลือในสต็อคเพียง ${product.stock} ชิ้น`);
-          alert(`สินค้าในสต็อคมีเพียง ${product.stock} ชิ้น ไม่สามารถเพิ่มได้อีกครับ!`);
+          speakThai(`สินค้า ${product.productName} หมดสต็อคแล้วค่ะ`);
+          alert(`❌ สินค้า "${product.productName}" สต็อคหมดแล้ว ไม่สามารถเพิ่มได้อีกครับ!`);
           return;
         }
+
+        const remainingAfter = product.stock - (qtyInCart + 1);
 
         playAudioTone('add');
         if (existing) {
@@ -510,6 +528,15 @@
           setCart([...current, { ...product, qty: 1 }]);
         }
         speakThai(`เพิ่ม ${product.productName} ${product.price} บาท`);
+
+        // Alert Toast Notification when stock is 2 or fewer
+        if (remainingAfter <= 2 && remainingAfter >= 0) {
+          setTimeout(() => {
+            playAudioTone('error');
+            speakThai(`เตือน สินค้า ${product.productName} เหลือในสต็อคเพียง ${remainingAfter} ชิ้นค่ะ`);
+            alert(`⚠️ แจ้งเตือนสินค้าใกล้หมด!\n\nสินค้า "${product.productName}" เหลือในสต็อคเพียง ${remainingAfter} ชิ้น!`);
+          }, 200);
+        }
       };
 
       const updateQty = (productID, delta) => {
@@ -930,6 +957,57 @@
           ${() => activeTab() === 'pos' ? html`
             <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 p-3 sm:p-5 max-w-[1920px] mx-auto w-full pb-24 lg:pb-5">
               
+              <!-- MOBILE ONLY: COMPACT TOP SUMMARY & QUICK PAYMENT BAR (PLACED AT VERY TOP ON MOBILE) -->
+              <div class="lg:hidden bg-slate-900 text-white p-3.5 rounded-[20px] border-2 border-sky-500 shadow-md flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xl">🛒</span>
+                    <span class="font-normal text-base text-white">ยอดรวมสินค้า:</span>
+                    <span class="text-xs bg-sky-600 text-white px-2.5 py-0.5 rounded-full font-medium">${totalItemsCount} ชิ้น</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sky-400 font-normal text-2xl sm:text-3xl tracking-tight">
+                      ฿${() => totalAmount().toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-800">
+                  <button 
+                    onClick=${() => openPaymentModal('cash')}
+                    disabled=${() => cart().length === 0}
+                    class="senior-btn py-2 px-1 bg-sky-600 hover:bg-sky-700 text-white font-normal text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1 border border-sky-400 disabled:opacity-30"
+                  >
+                    <span>💵</span>
+                    <span class="truncate">เงินสด</span>
+                  </button>
+                  <button 
+                    onClick=${() => openPaymentModal('transfer')}
+                    disabled=${() => cart().length === 0}
+                    class="senior-btn py-2 px-1 bg-sky-600 hover:bg-sky-700 text-white font-normal text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1 border border-sky-400 disabled:opacity-30"
+                  >
+                    <span>📲</span>
+                    <span class="truncate">โอนเงิน</span>
+                  </button>
+                  <button 
+                    onClick=${() => openPaymentModal('thongfah')}
+                    disabled=${() => cart().length === 0}
+                    class="senior-btn py-2 px-1 bg-sky-600 hover:bg-sky-700 text-white font-normal text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1 border border-sky-400 disabled:opacity-30"
+                  >
+                    <span>🏷️</span>
+                    <span class="truncate">ธงฟ้า</span>
+                  </button>
+                  <button 
+                    onClick=${() => openPaymentModal('thaichueaythai')}
+                    disabled=${() => cart().length === 0}
+                    class="senior-btn py-2 px-1 bg-sky-600 hover:bg-sky-700 text-white font-normal text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1 border border-sky-400 disabled:opacity-30"
+                  >
+                    <span>🇹🇭</span>
+                    <span class="truncate">ไทยช่วยไทย</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- LEFT PANEL: BARCODE & PRODUCT CATALOG (7 COLS ON DESKTOP/LAPTOP) -->
               <div class="lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
@@ -1031,15 +1109,15 @@
                               ${mainName}
                             </h3>
 
-                            <!-- 3. Size Spec & Stock -->
+                             <!-- 3. Size Spec & Hidden Stock Digits (Status Badge Only) -->
                             <div class="flex flex-wrap items-center gap-2 my-2">
                               ${sizeSpec ? html`
                                 <span class="bg-slate-100 text-slate-800 font-normal border border-slate-300 px-3 py-1 rounded-xl text-base">
                                   📏 ${sizeSpec}
                                 </span>
                               ` : ''}
-                              <span class="font-normal px-3 py-1 rounded-xl text-base border ${remainingStock > 3 ? 'bg-sky-50 text-sky-900 border-sky-200' : remainingStock > 0 ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-200 text-slate-600 border-slate-400'}">
-                                ${isOutOfStock ? '❌ สต็อคหมด' : `คงเหลือ: ${remainingStock} ชิ้น`}
+                              <span class="font-normal px-3 py-1 rounded-xl text-base border ${remainingStock > 2 ? 'bg-sky-50 text-sky-900 border-sky-200' : remainingStock > 0 ? 'bg-amber-50 text-amber-900 border-amber-300 font-medium' : 'bg-slate-200 text-slate-600 border-slate-400'}">
+                                ${isOutOfStock ? '❌ สต็อคหมด' : remainingStock <= 2 ? '⚠️ สินค้าใกล้หมด' : '✅ มีสินค้าพร้อมขาย'}
                               </span>
                             </div>
 
@@ -1502,6 +1580,94 @@
                   class="senior-btn py-3 bg-slate-900 text-white font-normal text-xl rounded-2xl shadow-md border border-slate-700"
                 >
                   ปิดกล้องสแกน
+                </button>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- MEAT / WEIGHT CALCULATION MODAL -->
+          ${() => weightModalProduct() ? html`
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
+                    <span>🥩 คำนวณราคาสินค้าตามน้ำหนัก</span>
+                  </h3>
+                  <button 
+                    onClick=${() => setWeightModalProduct(null)}
+                    class="senior-btn bg-slate-200 text-slate-800 px-3 py-1 rounded-xl text-lg font-normal"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div class="bg-sky-50 p-4 rounded-2xl border border-sky-200 text-left">
+                  <h4 class="font-normal text-xl text-slate-900">${weightModalProduct().productName}</h4>
+                  <p class="text-slate-700 text-base mt-1">ราคาต่อกิโลกรัม: <span class="font-medium text-sky-700 text-xl">฿${weightModalProduct().price} / กก.</span></p>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <label class="text-slate-800 text-lg text-left font-normal">กรอกน้ำหนักที่ชั่งได้ (กิโลกรัม):</label>
+                  <div class="relative">
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      autofocus
+                      placeholder="0.00" 
+                      value=${weightInput} 
+                      onInput=${(e) => setWeightInput(e.target.value)}
+                      class="w-full text-center text-4xl font-normal p-3 bg-slate-50 border-2 border-sky-400 rounded-2xl text-slate-900 focus:ring-4 focus:ring-sky-200 focus:bg-white focus:outline-none shadow-inner" 
+                    />
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-normal text-slate-500">กก.</span>
+                  </div>
+                </div>
+
+                <!-- Quick Weight Buttons -->
+                <div class="grid grid-cols-4 gap-2">
+                  ${['0.25', '0.5', '1.0', '1.5'].map(w => html`
+                    <button 
+                      onClick=${() => setWeightInput(w)} 
+                      class="senior-btn py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-lg font-normal"
+                    >
+                      ${w} กก.
+                    </button>
+                  `)}
+                </div>
+
+                ${() => {
+                  const w = parseFloat(weightInput()) || 0;
+                  const total = Math.round(weightModalProduct().price * w);
+                  return html`
+                    <div class="bg-slate-900 text-white p-4 rounded-2xl border border-sky-500 text-center shadow-inner">
+                      <span class="text-sm text-slate-300 block font-normal">คำนวณราคาสุทธิ (${w} กก. x ฿${weightModalProduct().price}):</span>
+                      <span class="text-sky-400 font-normal text-4xl tracking-tight">฿${total.toLocaleString('th-TH')}</span>
+                    </div>
+                  `;
+                }}
+
+                <button 
+                  onClick=${() => {
+                    const w = parseFloat(weightInput());
+                    if (!w || w <= 0) { 
+                      alert('กรุณากรอกน้ำหนักสินค้าให้ถูกต้องครับ'); 
+                      return; 
+                    }
+                    const prod = weightModalProduct();
+                    const calculatedPrice = Math.round(prod.price * w);
+                    const weightedItem = {
+                      ...prod,
+                      _isWeightedCustom: true,
+                      productID: prod.productID + '_w_' + Date.now(),
+                      productName: `${prod.productName} (${w} กก.)`,
+                      price: calculatedPrice,
+                      stock: prod.stock
+                    };
+                    addToCart(weightedItem);
+                    setWeightModalProduct(null);
+                  }}
+                  class="senior-btn py-4 bg-sky-600 hover:bg-sky-700 text-white font-normal text-2xl rounded-2xl shadow-xl border border-sky-500"
+                >
+                  ✅ ตกลงเพิ่มลงตะกร้า
                 </button>
               </div>
             </div>
