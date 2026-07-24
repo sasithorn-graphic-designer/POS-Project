@@ -258,7 +258,22 @@
       return el;
     }
 
-    const html = (window.htm && typeof window.htm.bind === 'function') ? window.htm.bind(h) : h;
+    // 2.1 HTM Template Engine with Safe Fallback Parser (Prevents stuck loading if CDN is slow)
+    let html;
+    try {
+      if (window.htm && typeof window.htm.bind === 'function') {
+        html = window.htm.bind(h);
+      } else {
+        html = function(strings, ...values) {
+          if (window.htm && typeof window.htm.bind === 'function') {
+            return window.htm.bind(h)(strings, ...values);
+          }
+          return h('div', null, strings.reduce((res, str, i) => res + (values[i - 1] || '') + str));
+        };
+      }
+    } catch(e) {
+      html = h;
+    }
 
     // 3. Audio Chimes Synthesizer
     function playAudioTone(type) {
@@ -513,12 +528,20 @@
         }
       };
 
-      // Fetch Products from Google Apps Script API
+      // Fetch Products from Google Apps Script API with 5-Second AbortController Timeout
       const fetchProductsFromAPI = async () => {
         setLoading(true);
         setApiError(null);
+        
+        // 5-second timeout controller so loading screen never hangs
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          try { controller.abort(); } catch(e){}
+        }, 5000);
+
         try {
-          const res = await fetch(API_URL);
+          const res = await fetch(API_URL, { signal: controller.signal });
+          clearTimeout(timeoutId);
           if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
           const rawData = await res.json();
           
@@ -542,15 +565,16 @@
           }
           setLastFetchTime(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }));
         } catch (err) {
-          console.error('Failed to fetch products API:', err);
-          setApiError('ไม่สามารถโหลด API ได้ (ใช้งานสินค้าสำรอง)');
+          clearTimeout(timeoutId);
+          console.warn('API Fetch timed out or failed. Falling back to offline dataset immediately:', err);
+          setApiError('ไม่สามารถดึงข้อมูลออนไลน์ได้ (ใช้งานข้อมูลสินค้าสำรองในเครื่อง)');
         } finally {
           setLoading(false);
         }
       };
 
-      // Trigger async fetch after render
-      setTimeout(fetchProductsFromAPI, 100);
+      // Trigger async fetch after render safely
+      setTimeout(fetchProductsFromAPI, 50);
 
       // Categories
       const categoriesList = createMemo(() => {
@@ -2599,31 +2623,51 @@
       `;
     }
 
-    // 6. Safe Initialization & Mounting
+    // 6. Safe Initialization & Mount with Error Boundary & Timeout Protection
     function mountApp() {
       try {
         const root = document.getElementById('app');
-        if (root) {
-          root.innerHTML = '';
-          root.appendChild(POSApp());
-          if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
-          }
+        if (!root) return;
+        
+        // Render POS App instance
+        const appNode = POSApp();
+        root.innerHTML = '';
+        root.appendChild(appNode);
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          try { window.lucide.createIcons(); } catch(e){}
         }
       } catch (err) {
-        console.error('Mount Error:', err);
+        console.error('Mount Error caught safely:', err);
         const root = document.getElementById('app');
         if (root) {
-          root.innerHTML = '<div style="color:red; font-size:24px; padding:40px; text-align:center;">เกิดข้อผิดพลาดในการโหลดระบบ: ' + err.message + '</div>';
+          root.innerHTML = `
+            <div style="background-color:#0f172a; color:#ffffff; padding:40px; text-align:center; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-center:center; font-family:sans-serif;">
+              <h2 style="font-size:28px; color:#f59e0b; margin-bottom:12px;">🏪 สุวรรณ การค้า POS - ระบบเข้าสู่โหมดสำรอง</h2>
+              <p style="font-size:18px; color:#cbd5e1; margin-bottom:24px;">กำลังโหลดระบบด้วยข้อมูลสินค้าสำรองในเครื่อง</p>
+              <button onclick="window.location.reload()" style="padding:14px 28px; background-color:#059669; color:#ffffff; font-size:18px; font-weight:bold; border:none; border-radius:16px; cursor:pointer;">
+                🔄 โหลดระบบใหม่อีกครั้ง
+              </button>
+            </div>
+          `;
         }
       }
     }
 
+    // Dismiss loading screen immediately if ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', mountApp);
     } else {
       mountApp();
     }
+
+    // Safety Timeout: Force mount after 1.5s if DOMContentLoaded event was missed
+    setTimeout(() => {
+      const root = document.getElementById('app');
+      if (root && root.innerHTML.includes('กำลังโหลดระบบ POS')) {
+        mountApp();
+      }
+    }, 1500);
   </script>
 </body>
 </html>
