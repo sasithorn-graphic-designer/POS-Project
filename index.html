@@ -377,6 +377,7 @@
       // Weight Calculation Modal State
       const [weightModalProduct, setWeightModalProduct] = createSignal(null);
       const [weightInput, setWeightInput] = createSignal('');
+      const [weightUnit, setWeightUnit] = createSignal('kg');
 
       // Cart & Payment
       const [cart, setCart] = createSignal([]);
@@ -504,6 +505,7 @@
         if ((product.category === 'เนื้อสัตว์' || product.isWeighted) && !product._isWeightedCustom) {
           setWeightModalProduct(product);
           setWeightInput('');
+          setWeightUnit('kg');
           playAudioTone('click');
           return;
         }
@@ -1585,7 +1587,7 @@
             </div>
           ` : ''}
 
-          <!-- MEAT / WEIGHT CALCULATION MODAL -->
+          <!-- MEAT / WEIGHT CALCULATION MODAL WITH UNIT TOGGLE (กก. / กรัม) -->
           ${() => weightModalProduct() ? html`
             <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
               <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
@@ -1603,62 +1605,97 @@
 
                 <div class="bg-sky-50 p-4 rounded-2xl border border-sky-200 text-left">
                   <h4 class="font-normal text-xl text-slate-900">${weightModalProduct().productName}</h4>
-                  <p class="text-slate-700 text-base mt-1">ราคาต่อกิโลกรัม: <span class="font-medium text-sky-700 text-xl">฿${weightModalProduct().price} / กก.</span></p>
+                  <p class="text-slate-700 text-base mt-1">ราคาอ้างอิง: <span class="font-medium text-sky-700 text-xl">฿${weightModalProduct().price} / กก.</span></p>
+                </div>
+
+                <!-- Unit Toggle Buttons: กิโลกรัม (กก.) vs กรัม (ก.) -->
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-slate-800 text-base text-left font-normal">เลือกหน่วยน้ำหนักในการชั่ง:</label>
+                  <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-300">
+                    <button 
+                      onClick=${() => setWeightUnit('kg')}
+                      class="senior-btn py-2.5 rounded-xl text-lg font-normal transition-all ${() => weightUnit() === 'kg' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
+                    >
+                      ⚖️ กิโลกรัม (กก.)
+                    </button>
+                    <button 
+                      onClick=${() => setWeightUnit('g')}
+                      class="senior-btn py-2.5 rounded-xl text-lg font-normal transition-all ${() => weightUnit() === 'g' ? 'bg-sky-600 border-sky-500 text-white shadow-md font-medium' : 'bg-transparent text-slate-700 hover:bg-slate-200'}"
+                    >
+                      ⚖️ กรัม (ก.)
+                    </button>
+                  </div>
                 </div>
 
                 <div class="flex flex-col gap-2">
-                  <label class="text-slate-800 text-lg text-left font-normal">กรอกน้ำหนักที่ชั่งได้ (กิโลกรัม):</label>
+                  <label class="text-slate-800 text-lg text-left font-normal">
+                    ${() => weightUnit() === 'kg' ? 'กรอกน้ำหนักที่ชั่งได้ (กิโลกรัม):' : 'กรอกน้ำหนักที่ชั่งได้ (กรัม):'}
+                  </label>
                   <div class="relative">
                     <input 
                       type="number" 
-                      step="0.01" 
+                      step=${() => weightUnit() === 'kg' ? '0.01' : '1'} 
                       autofocus
-                      placeholder="0.00" 
+                      placeholder=${() => weightUnit() === 'kg' ? '0.00' : '0'} 
                       value=${weightInput} 
                       onInput=${(e) => setWeightInput(e.target.value)}
                       class="w-full text-center text-4xl font-normal p-3 bg-slate-50 border-2 border-sky-400 rounded-2xl text-slate-900 focus:ring-4 focus:ring-sky-200 focus:bg-white focus:outline-none shadow-inner" 
                     />
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-normal text-slate-500">กก.</span>
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-normal text-slate-500">
+                      ${() => weightUnit() === 'kg' ? 'กก.' : 'กรัม'}
+                    </span>
                   </div>
                 </div>
 
                 <!-- Quick Weight Buttons -->
                 <div class="grid grid-cols-4 gap-2">
-                  ${['0.25', '0.5', '1.0', '1.5'].map(w => html`
-                    <button 
-                      onClick=${() => setWeightInput(w)} 
-                      class="senior-btn py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-lg font-normal"
-                    >
-                      ${w} กก.
-                    </button>
-                  `)}
+                  ${() => {
+                    const isKg = weightUnit() === 'kg';
+                    const list = isKg ? ['0.25', '0.5', '1.0', '1.5'] : ['100', '250', '500', '1000'];
+                    return list.map(w => html`
+                      <button 
+                        onClick=${() => setWeightInput(w)} 
+                        class="senior-btn py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-base font-normal"
+                      >
+                        ${w} ${isKg ? 'กก.' : 'ก.'}
+                      </button>
+                    `);
+                  }}
                 </div>
 
                 ${() => {
-                  const w = parseFloat(weightInput()) || 0;
-                  const total = Math.round(weightModalProduct().price * w);
+                  const val = parseFloat(weightInput()) || 0;
+                  const isKg = weightUnit() === 'kg';
+                  const pricePerKg = weightModalProduct().price;
+                  const calculatedPrice = isKg ? Math.round(pricePerKg * val) : Math.round((pricePerKg / 1000) * val);
                   return html`
                     <div class="bg-slate-900 text-white p-4 rounded-2xl border border-sky-500 text-center shadow-inner">
-                      <span class="text-sm text-slate-300 block font-normal">คำนวณราคาสุทธิ (${w} กก. x ฿${weightModalProduct().price}):</span>
-                      <span class="text-sky-400 font-normal text-4xl tracking-tight">฿${total.toLocaleString('th-TH')}</span>
+                      <span class="text-sm text-slate-300 block font-normal">
+                        สูตรคำนวณ: ${isKg ? `${val} กก. x ฿${pricePerKg}` : `${val} กรัม x (฿${pricePerKg}/1000)`}
+                      </span>
+                      <span class="text-sky-400 font-normal text-4xl tracking-tight">฿${calculatedPrice.toLocaleString('th-TH')}</span>
                     </div>
                   `;
                 }}
 
                 <button 
                   onClick=${() => {
-                    const w = parseFloat(weightInput());
-                    if (!w || w <= 0) { 
+                    const val = parseFloat(weightInput());
+                    if (!val || val <= 0) { 
                       alert('กรุณากรอกน้ำหนักสินค้าให้ถูกต้องครับ'); 
                       return; 
                     }
                     const prod = weightModalProduct();
-                    const calculatedPrice = Math.round(prod.price * w);
+                    const isKg = weightUnit() === 'kg';
+                    const calculatedPrice = isKg ? Math.round(prod.price * val) : Math.round((prod.price / 1000) * val);
+                    const cleanName = prod.productName.replace(/\s*\(กก\.\)\s*/g, '').trim();
+                    const unitLabel = isKg ? `${val} กก.` : `${val} กรัม`;
+
                     const weightedItem = {
                       ...prod,
                       _isWeightedCustom: true,
                       productID: prod.productID + '_w_' + Date.now(),
-                      productName: `${prod.productName} (${w} กก.)`,
+                      productName: `${cleanName} (${unitLabel})`,
                       price: calculatedPrice,
                       stock: prod.stock
                     };
