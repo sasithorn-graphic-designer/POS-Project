@@ -455,12 +455,16 @@
         });
       });
 
-      // Filtered Dashboard Metrics
+      // Filtered Dashboard Metrics (Loyverse POS 5 KPI Cards Calculation)
       const dashboardMetrics = createMemo(() => {
         const sales = dashboardFilteredSales();
-        const totalRev = sales.reduce((sum, r) => sum + (r.total || 0), 0);
+        const grossSales = sales.reduce((sum, r) => sum + (r.total || 0), 0);
         const count = sales.length;
-        const avgBill = count > 0 ? totalRev / count : 0;
+        const avgBill = count > 0 ? grossSales / count : 0;
+        const refunds = 0;
+        const discounts = 0;
+        const netSales = grossSales - refunds - discounts;
+        const netProfit = Math.round(netSales * 0.35);
 
         // Top selling products aggregation
         const productSalesMap = {};
@@ -483,7 +487,7 @@
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5);
 
-        return { totalRev, count, avgBill, topProducts };
+        return { grossSales, refunds, discounts, netSales, netProfit, count, avgBill, topProducts };
       });
 
       // Daily Closure State
@@ -869,7 +873,7 @@
             const thongfahTotal = salesHistory().filter(r => r.method.includes('ธงฟ้า')).reduce((sum, r) => sum + r.total, 0);
             const thaiChueayTotal = salesHistory().filter(r => r.method.includes('ไทยช่วยไทย')).reduce((sum, r) => sum + r.total, 0);
 
-            // Render Line Chart
+            // Render Line Chart (Loyverse POS Green Theme)
             const ctx1 = document.getElementById('revenueTrendChart');
             if (ctx1 && window.Chart) {
               if (window.myRevenueChart) window.myRevenueChart.destroy();
@@ -878,22 +882,27 @@
                 data: {
                   labels: ['17 ก.ค.', '18 ก.ค.', '19 ก.ค.', '20 ก.ค.', '21 ก.ค.', '22 ก.ค.', 'วันนี้'],
                   datasets: [{
-                    label: 'ยอดขายรายวัน (บาท)',
+                    label: 'ยอดขายสุทธิรายวัน (บาท)',
                     data: [1250, 1980, 2400, 1600, 2850, 3400, Math.max(1290, todayTotal)],
-                    borderColor: '#0284c7',
-                    backgroundColor: 'rgba(2, 132, 199, 0.15)',
+                    borderColor: '#2E7D32',
+                    backgroundColor: 'rgba(46, 125, 50, 0.12)',
                     fill: true,
                     tension: 0.35,
                     borderWidth: 3,
-                    pointRadius: 6,
-                    pointBackgroundColor: '#0284c7'
+                    pointRadius: 5,
+                    pointBackgroundColor: '#2E7D32',
+                    pointHoverRadius: 7
                   }]
                 },
                 options: {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: { labels: { font: { family: 'Plus Jakarta Sans, Prompt', size: 16, weight: '500' } } }
+                    legend: { labels: { font: { family: 'Plus Jakarta Sans, Prompt', size: 15, weight: '500' }, color: '#374151' } }
+                  },
+                  scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: '#F3F4F6' } }
                   }
                 }
               });
@@ -1039,28 +1048,28 @@
       return html`
         <div class="flex-1 flex flex-col text-xl bg-slate-100 text-slate-900 min-h-screen font-normal">
           
-          <!-- TOP HEADER BAR (DARK NAVY BACKGROUND & WHITE TEXT WITH HAMBURGER BUTTON) -->
-          <header class="bg-slate-900 border-b-4 border-sky-500 px-4 sm:px-6 py-3 shadow-lg flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 text-white">
+          <!-- TOP HEADER BAR (LOYVERSE GREEN #2E7D32 WHEN ON DASHBOARD, NAVY ON POS) -->
+          <header class="transition-colors duration-300 ${() => activeTab() === 'dashboard' ? 'bg-[#2E7D32] border-b-4 border-emerald-700' : 'bg-slate-900 border-b-4 border-sky-500'} px-4 sm:px-6 py-3 shadow-lg flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 text-white">
             <div class="flex items-center gap-3">
               <!-- HAMBURGER MENU BUTTON (☰) -->
               <button 
                 onClick=${() => { setSidebarOpen(true); playAudioTone('click'); }}
-                class="senior-btn p-2.5 sm:px-4 sm:py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl border border-sky-400 flex items-center justify-center gap-2 shadow-md"
+                class="senior-btn p-2.5 sm:px-4 sm:py-2 ${() => activeTab() === 'dashboard' ? 'bg-emerald-700 hover:bg-emerald-800 border-emerald-500' : 'bg-sky-600 hover:bg-sky-700 border-sky-400'} text-white rounded-2xl border flex items-center justify-center gap-2 shadow-md"
                 title="เปิดเมนูหลัก"
               >
                 <span class="text-2xl sm:text-3xl leading-none">☰</span>
                 <span class="hidden sm:inline font-normal text-base sm:text-lg">เมนูหลัก</span>
               </button>
 
-              <span class="text-3xl sm:text-4xl bg-sky-600 p-1.5 rounded-2xl shadow hidden xs:block">🏪</span>
+              <span class="text-3xl sm:text-4xl ${() => activeTab() === 'dashboard' ? 'bg-emerald-700' : 'bg-sky-600'} p-1.5 rounded-2xl shadow hidden xs:block">🏪</span>
               <div>
                 <h1 class="font-normal text-xl sm:text-2xl text-white leading-tight tracking-wide">
                   สุวรรณ การค้า
                 </h1>
-                <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-300 font-normal mt-0.5">
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-200 font-normal mt-0.5">
                   <span>📅 ${currentTime}</span>
                   ${() => lastFetchTime() ? html`
-                    <span class="hidden md:inline bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-lg text-sky-400 font-normal">
+                    <span class="hidden md:inline ${() => activeTab() === 'dashboard' ? 'bg-emerald-800 border-emerald-600 text-emerald-200' : 'bg-slate-800 border-slate-700 text-sky-400'} border px-2 py-0.5 rounded-lg font-normal">
                       🔄 API: ${lastFetchTime}
                     </span>
                   ` : ''}
@@ -1073,7 +1082,7 @@
               <button 
                 onClick=${fetchProductsFromAPI}
                 disabled=${loading}
-                class="senior-btn px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 rounded-2xl font-normal text-sm sm:text-base flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                class="senior-btn px-3 py-2 ${() => activeTab() === 'dashboard' ? 'bg-emerald-800/80 hover:bg-emerald-800 border-emerald-600 text-white' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-sky-400'} rounded-2xl font-normal text-sm sm:text-base flex items-center gap-1.5 shadow-sm disabled:opacity-50 border"
               >
                 <span class="text-xl ${() => loading() ? 'animate-spin' : ''}">🔄</span>
                 <span class="hidden md:inline">รีเฟรช API</span>
@@ -1086,7 +1095,7 @@
                   playAudioTone('click');
                   if (next) speakThai('เปิดระบบเสียงอ่านภาษาไทยเรียบร้อยค่ะ');
                 }}
-                class="senior-btn px-3 py-2 rounded-2xl font-normal text-sm sm:text-base flex items-center gap-1.5 border ${() => soundEnabled() ? 'bg-sky-600 border-sky-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}"
+                class="senior-btn px-3 py-2 rounded-2xl font-normal text-sm sm:text-base flex items-center gap-1.5 border ${() => soundEnabled() ? (activeTab() === 'dashboard' ? 'bg-emerald-700 border-emerald-500 text-white shadow-md' : 'bg-sky-600 border-sky-500 text-white shadow-md') : 'bg-slate-800 border-slate-700 text-slate-400'}"
               >
                 <span class="text-xl">${() => soundEnabled() ? '🔊' : '🔇'}</span>
                 <span class="hidden md:inline">${() => soundEnabled() ? 'เสียงอ่าน: เปิด' : 'เสียงอ่าน: ปิด'}</span>
@@ -1568,21 +1577,39 @@
             </div>
           ` : ''}
 
-          <!-- TAB 2: DASHBOARD ANALYTICS VIEW WITH DATE FILTER RANGE -->
+          <!-- TAB 2: DASHBOARD ANALYTICS VIEW (LOYVERSE POS MINIMAL GREEN STYLE) -->
           ${() => activeTab() === 'dashboard' ? html`
-            <div class="flex-1 max-w-[1920px] mx-auto w-full p-3 sm:p-6 flex flex-col gap-5 font-normal">
+            <div class="flex-1 max-w-[1920px] mx-auto w-full p-4 sm:p-6 flex flex-col gap-6 font-sans bg-[#F4F5F7] text-slate-800 min-h-screen">
               
-              <!-- DATE FILTER RANGE TOOLBAR (วันนี้, 7 วัน, 1 เดือน, 3 เดือน, 1 ปี) -->
-              <div class="bg-white p-4 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl sm:text-3xl">📅</span>
-                  <div>
-                    <h3 class="font-normal text-xl sm:text-2xl text-slate-900 leading-tight">เลือกช่วงเวลาดูรายงาน:</h3>
-                    <span class="text-xs sm:text-sm text-slate-500 font-normal">กรองข้อมูลยอดขาย บิล และสินค้าขายดีแบบไดนามิก</span>
+              <!-- FILTER BAR (LOYVERSE POS STYLE: DATE, TIME, EMPLOYEE DROPDOWN/BUTTONS) -->
+              <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                  <div class="flex items-center gap-2 text-emerald-800 font-semibold text-lg">
+                    <span class="text-2xl">📊</span>
+                    <span>รายงานยอดขาย</span>
+                  </div>
+                  
+                  <!-- Employee Filter Dropdown -->
+                  <div class="relative">
+                    <select class="bg-white border border-gray-200 text-gray-700 text-sm sm:text-base rounded-xl px-3.5 py-2 font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                      <option value="all">👤 พนักงาน: ทั้งหมด</option>
+                      <option value="owner">👤 เจ้าของร้าน (สุวรรณ)</option>
+                      <option value="emp1">👤 พนักงานแคชเชียร์ 1</option>
+                    </select>
+                  </div>
+
+                  <!-- Time Shift Filter Dropdown -->
+                  <div class="relative">
+                    <select class="bg-white border border-gray-200 text-gray-700 text-sm sm:text-base rounded-xl px-3.5 py-2 font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                      <option value="all_day">⏰ เวลา: ทั้งวัน (24 ชม.)</option>
+                      <option value="morning">⏰ กะเช้า (08:00 - 16:00)</option>
+                      <option value="evening">⏰ กะเย็น (16:00 - 24:00)</option>
+                    </select>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                <!-- Date Range Selector Buttons -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
                   ${[
                     { id: 'today', label: 'วันนี้' },
                     { id: '7days', label: '7 วัน' },
@@ -1595,7 +1622,7 @@
                         setDateFilterRange(r.id);
                         playAudioTone('click');
                       }}
-                      class="senior-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm sm:text-base transition-all border ${() => dateFilterRange() === r.id ? 'bg-sky-600 border-sky-500 text-white font-bold shadow-md scale-105' : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'}"
+                      class="senior-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm sm:text-base transition-all border ${() => dateFilterRange() === r.id ? 'bg-[#2E7D32] border-[#2E7D32] text-white font-semibold shadow-sm' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}"
                     >
                       ${r.label}
                     </button>
@@ -1603,110 +1630,127 @@
                 </div>
               </div>
 
-              <!-- SUMMARY METRICS CARDS (FILTERED DYNAMICALLY) -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- 5 COLUMN KPI STAT CARDS (LOYVERSE POS MINIMAL WHITE CARDS WITH BOLD NUMBERS) -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                <!-- 1. Gross Sales (ยอดขาย) -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-base sm:text-lg">ยอดขายรวมช่วงเวลา</span>
-                    <span class="text-3xl">☀️</span>
+                    <span class="font-medium text-gray-500 text-sm sm:text-base">ยอดขาย</span>
+                    <span class="text-xl bg-emerald-50 text-emerald-700 p-1.5 rounded-lg">📈</span>
                   </div>
-                  <div class="my-2">
-                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
-                      ฿${() => dashboardMetrics().totalRev.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                  <div class="my-3">
+                    <div class="text-gray-900 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tight">
+                      ฿${() => dashboardMetrics().grossSales.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>จำนวนบิลทั้งหมด:</span>
-                    <span class="text-slate-900 font-medium">${() => dashboardMetrics().count} บิล</span>
+                  <div class="text-xs font-normal text-gray-400 border-t border-gray-100 pt-2 flex justify-between">
+                    <span>รวม ${() => dashboardMetrics().count} บิล</span>
+                    <span>100%</span>
                   </div>
                 </div>
 
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                <!-- 2. Refunds (คืนเงิน) -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-base sm:text-lg">จำนวนรายการขาย</span>
-                    <span class="text-3xl">🧾</span>
+                    <span class="font-medium text-gray-500 text-sm sm:text-base">คืนเงิน</span>
+                    <span class="text-xl bg-gray-50 text-gray-500 p-1.5 rounded-lg">↩️</span>
                   </div>
-                  <div class="my-2">
-                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
-                      ${() => dashboardMetrics().count} บิล
+                  <div class="my-3">
+                    <div class="text-gray-400 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tight">
+                      ฿${() => dashboardMetrics().refunds.toFixed(2)}
                     </div>
                   </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>สถานะข้อมูล:</span>
-                    <span class="text-sky-700 font-medium">🟢 ซิงค์ Google Sheets</span>
+                  <div class="text-xs font-normal text-gray-400 border-t border-gray-100 pt-2 flex justify-between">
+                    <span>0 รายการ</span>
+                    <span>0.00%</span>
                   </div>
                 </div>
 
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                <!-- 3. Discounts (ส่วนลด) -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-base sm:text-lg">ยอดขายเฉลี่ยต่อบิล</span>
-                    <span class="text-3xl">📊</span>
+                    <span class="font-medium text-gray-500 text-sm sm:text-base">ส่วนลด</span>
+                    <span class="text-xl bg-amber-50 text-amber-600 p-1.5 rounded-lg">🏷️</span>
                   </div>
-                  <div class="my-2">
-                    <div class="text-sky-600 font-normal text-3xl sm:text-4xl lg:text-5xl tracking-tight">
-                      ฿${() => dashboardMetrics().avgBill.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                  <div class="my-3">
+                    <div class="text-gray-400 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tight">
+                      ฿${() => dashboardMetrics().discounts.toFixed(2)}
                     </div>
                   </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>เฉลี่ยต่อตะกร้า:</span>
-                    <span class="text-slate-900 font-medium">฿${() => dashboardMetrics().avgBill.toFixed(0)}</span>
+                  <div class="text-xs font-normal text-gray-400 border-t border-gray-100 pt-2 flex justify-between">
+                    <span>ส่วนลดหน้าร้าน</span>
+                    <span>0.00%</span>
                   </div>
                 </div>
 
-                <div class="bg-white border-2 border-slate-300 p-5 rounded-[24px] shadow-sm flex flex-col justify-between">
+                <!-- 4. Net Sales (ยอดขายสุทธิ) -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                   <div class="flex items-center justify-between">
-                    <span class="font-normal text-slate-600 text-base sm:text-lg">สินค้าขายดีอันดับ 1</span>
-                    <span class="text-3xl">🏆</span>
+                    <span class="font-medium text-gray-700 text-sm sm:text-base">ยอดขายสุทธิ</span>
+                    <span class="text-xl bg-emerald-100 text-emerald-800 p-1.5 rounded-lg">💰</span>
                   </div>
-                  <div class="my-2 truncate">
-                    <div class="text-slate-900 font-normal text-xl sm:text-2xl truncate">
-                      ${() => dashboardMetrics().topProducts[0] ? dashboardMetrics().topProducts[0].name : 'ไม่มีข้อมูล'}
+                  <div class="my-3">
+                    <div class="text-[#2E7D32] font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tight">
+                      ฿${() => dashboardMetrics().netSales.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                     </div>
-                    <span class="text-sky-600 text-lg sm:text-xl font-medium block">
-                      ${() => dashboardMetrics().topProducts[0] ? `฿${dashboardMetrics().topProducts[0].revenue.toLocaleString('th-TH')}` : ''}
-                    </span>
                   </div>
-                  <div class="text-sm font-normal text-slate-500 flex justify-between border-t border-slate-200 pt-2">
-                    <span>จำนวนขาย:</span>
-                    <span class="text-sky-700 font-medium">
-                      ${() => dashboardMetrics().topProducts[0] ? `${dashboardMetrics().topProducts[0].qty} ชิ้น` : '0 ชิ้น'}
-                    </span>
+                  <div class="text-xs font-normal text-gray-500 border-t border-gray-100 pt-2 flex justify-between">
+                    <span>หลังหักส่วนลด</span>
+                    <span class="text-emerald-700 font-semibold">สุทธิ</span>
+                  </div>
+                </div>
+
+                <!-- 5. Net Profit (กำไรสุทธิ) -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-gray-700 text-sm sm:text-base">กำไรสุทธิ</span>
+                    <span class="text-xl bg-emerald-100 text-emerald-800 p-1.5 rounded-lg">🏆</span>
+                  </div>
+                  <div class="my-3">
+                    <div class="text-[#15803D] font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tight">
+                      ฿${() => dashboardMetrics().netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div class="text-xs font-normal text-gray-500 border-t border-gray-100 pt-2 flex justify-between">
+                    <span>ประมาณการกำไร</span>
+                    <span class="text-emerald-700 font-semibold">~35%</span>
                   </div>
                 </div>
 
               </div>
 
-              <!-- TOP SELLING PRODUCTS & CHARTS SECTION -->
+              <!-- CHARTS & TOP PRODUCTS SECTION (MODERN WHITE CARDS WITH LIGHT SHADOWS) -->
               <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 
                 <!-- TOP 5 SELLING PRODUCTS LIST -->
-                <div class="lg:col-span-5 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
-                      <span>🏆 5 อันดับสินค้าขายดี (ช่วงเวลาที่เลือก)</span>
+                <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-3">
+                  <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 class="font-semibold text-xl text-gray-800 flex items-center gap-2">
+                      <span>🏆 5 อันดับสินค้าขายดีที่สุด</span>
                     </h3>
+                    <span class="text-xs text-gray-400">เรียงตามยอดขาย</span>
                   </div>
 
                   <div class="flex flex-col gap-2.5 my-1">
                     ${() => {
                       const topList = dashboardMetrics().topProducts;
                       if (topList.length === 0) {
-                        return html`<p class="text-slate-500 py-6 text-center">ไม่มีข้อมูลรายการขายในช่วงเวลานี้</p>`;
+                        return html`<p class="text-gray-400 py-8 text-center text-base">ไม่มีข้อมูลรายการขายในช่วงเวลานี้</p>`;
                       }
                       return topList.map((item, index) => html`
-                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
+                        <div class="bg-gray-50/80 border border-gray-200/80 rounded-xl p-3 flex items-center justify-between gap-2 shadow-2xs hover:bg-gray-50 transition-colors">
                           <div class="flex items-center gap-3 min-w-0">
-                            <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-base ${index === 0 ? 'bg-amber-400 text-amber-950' : index === 1 ? 'bg-slate-300 text-slate-900' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'}">
+                            <span class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${index === 0 ? 'bg-amber-400 text-amber-950' : index === 1 ? 'bg-gray-300 text-gray-800' : index === 2 ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-600'}">
                               ${index + 1}
                             </span>
                             <div class="min-w-0">
-                              <h4 class="font-normal text-slate-900 text-base sm:text-lg truncate">${item.name}</h4>
-                              <span class="text-xs text-slate-500 font-normal block">จำนวนขาย: ${item.qty} ชิ้น</span>
+                              <h4 class="font-medium text-gray-800 text-base truncate">${item.name}</h4>
+                              <span class="text-xs text-gray-500 font-normal block">ขายได้ ${item.qty} ชิ้น</span>
                             </div>
                           </div>
                           <div class="text-right shrink-0">
-                            <span class="text-sky-700 font-normal text-lg sm:text-xl">
+                            <span class="text-[#2E7D32] font-semibold text-lg">
                               ฿${item.revenue.toLocaleString('th-TH')}
                             </span>
                           </div>
@@ -1716,12 +1760,13 @@
                   </div>
                 </div>
 
-                <!-- CHARTS CANVAS -->
-                <div class="lg:col-span-7 bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3 min-h-[360px]">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h3 class="font-normal text-2xl text-slate-900 flex items-center gap-2">
-                      <span>📈 แนวโน้มยอดขายตามช่วงเวลา</span>
+                <!-- SALES TREND LINE CHART CANVAS -->
+                <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-3 min-h-[360px]">
+                  <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 class="font-semibold text-xl text-gray-800 flex items-center gap-2">
+                      <span>📈 แนวโน้มยอดขายสุทธิ</span>
                     </h3>
+                    <span class="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-medium">สไตล์ Loyverse POS</span>
                   </div>
                   <div class="flex-1 relative w-full h-[280px]">
                     <canvas id="revenueTrendChart"></canvas>
@@ -1730,47 +1775,50 @@
 
               </div>
 
-              <!-- RECENT TRANSACTIONS TABLE (FILTERED BY DATE RANGE) -->
-              <div class="bg-white p-5 rounded-[24px] border-2 border-slate-300 shadow-sm flex flex-col gap-3">
-                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h3 class="font-normal text-2xl text-slate-900">📋 รายการขายตามช่วงเวลาที่เลือก (สุวรรณ การค้า)</h3>
-                  <span class="text-sm bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-medium">
+              <!-- RECENT TRANSACTIONS TABLE (LIGHT GREY HEADER & DARK GREY TEXT) -->
+              <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div>
+                    <h3 class="font-semibold text-xl text-gray-800">📋 รายการขายย้อนหลัง (สุวรรณ การค้า)</h3>
+                    <span class="text-xs text-gray-400">ข้อมูลประวัติการทำรายการในระบบ</span>
+                  </div>
+                  <span class="text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-medium">
                     ${() => dashboardFilteredSales().length} รายการ
                   </span>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
                   <table class="w-full text-left border-collapse">
                     <thead>
-                      <tr class="bg-slate-100 text-slate-700 text-base font-normal border-b-2 border-slate-300">
-                        <th class="p-3">เลขที่บิล</th>
-                        <th class="p-3">วันที่ / เวลา</th>
-                        <th class="p-3">ช่องทางชำระเงิน</th>
-                        <th class="p-3 text-right">ยอดเงินรวม</th>
+                      <tr class="bg-[#F4F5F7] text-gray-700 text-sm font-semibold border-b border-gray-200">
+                        <th class="p-3.5">เลขที่บิล</th>
+                        <th class="p-3.5">วันที่ / เวลา</th>
+                        <th class="p-3.5">ช่องทางชำระเงิน</th>
+                        <th class="p-3.5 text-right">ยอดเงินรวมสุทธิ</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 text-base font-normal">
+                    <tbody class="divide-y divide-gray-100 text-sm text-gray-800">
                       ${() => {
                         const list = dashboardFilteredSales();
                         if (list.length === 0) {
                           return html`
                             <tr>
-                              <td colspan="4" class="p-6 text-center text-slate-500">
+                              <td colspan="4" class="p-6 text-center text-gray-400">
                                 ไม่พบรายการขายในช่วงเวลานี้
                               </td>
                             </tr>
                           `;
                         }
                         return list.map(item => html`
-                          <tr class="hover:bg-slate-50">
-                            <td class="p-3 font-normal text-sky-700">${item.id}</td>
-                            <td class="p-3 text-slate-600">${item.date || ''} ${item.time || ''}</td>
-                            <td class="p-3">
-                              <span class="bg-slate-100 border border-slate-300 px-3 py-1 rounded-xl text-slate-800 font-normal text-sm">
+                          <tr class="hover:bg-gray-50/80 transition-colors">
+                            <td class="p-3.5 font-medium text-emerald-800">${item.id}</td>
+                            <td class="p-3.5 text-gray-600">${item.date || ''} ${item.time || ''}</td>
+                            <td class="p-3.5">
+                              <span class="bg-gray-100 border border-gray-200 px-3 py-1 rounded-lg text-gray-700 font-medium text-xs">
                                 ${item.method}
                               </span>
                             </td>
-                            <td class="p-3 text-right font-normal text-sky-700 text-xl">
+                            <td class="p-3.5 text-right font-semibold text-gray-900 text-base">
                               ฿${(item.total || 0).toFixed(2)}
                             </td>
                           </tr>
