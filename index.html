@@ -406,9 +406,10 @@
       const [weightInput, setWeightInput] = createSignal('');
       const [weightUnit, setWeightUnit] = createSignal('kg');
 
-      // Cart & Payment (Silom POS Extensions)
+      // Cart & Payment (Silom POS & Modal Flow)
       const [cart, setCart] = createSignal([]);
       const [activePaymentType, setActivePaymentType] = createSignal(null);
+      const [paymentSelectModalOpen, setPaymentSelectModalOpen] = createSignal(false);
       const [cashInput, setCashInput] = createSignal('');
       const [completedReceipt, setCompletedReceipt] = createSignal(null);
       const [customerName, setCustomerName] = createSignal('ลูกค้าทั่วไป (Walk-in)');
@@ -1050,30 +1051,35 @@
       return html`
         <div class="flex-1 flex flex-col text-xl bg-slate-100 text-slate-900 min-h-screen font-normal">
           
-          <!-- TOP HEADER BAR (SILOM POS DARK THEME #0F172A WITH WHITE CONTRAST & SEARCH BAR & SHORTCUT TOOLBAR) -->
-          <header class="bg-[#0F172A] border-b-4 border-emerald-600 px-3 sm:px-5 py-2.5 shadow-lg flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 text-white">
+          <!-- CLEAN TOP HEADER BAR (STORE NAME: สุวรรณ การค้า & CLEAN SEARCH BAR & HAMBURGER MENU) -->
+          <header class="bg-[#0F172A] border-b-4 border-emerald-600 px-3 sm:px-6 py-2.5 shadow-lg flex items-center justify-between gap-3 sticky top-0 z-30 text-white">
             
-            <!-- LEFT SECTION: HAMBURGER, STORE NAME, AND ROUNDED WHITE SEARCH INPUT -->
-            <div class="flex items-center gap-3 flex-1 min-w-0">
+            <!-- LEFT SECTION: HAMBURGER MENU & STORE NAME -->
+            <div class="flex items-center gap-3">
               <button 
                 onClick=${() => { setSidebarOpen(true); playAudioTone('click'); }}
                 class="senior-btn p-2 sm:px-3 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl border border-emerald-500 flex items-center justify-center gap-1.5 shadow-sm shrink-0"
-                title="เปิดเมนูหลัก (Silom POS)"
+                title="เปิดเมนูหลัก"
               >
                 <span class="text-xl sm:text-2xl leading-none">☰</span>
-                <span class="hidden md:inline font-medium text-sm sm:text-base">เมนู</span>
+                <span class="font-medium text-sm sm:text-base">เมนู</span>
               </button>
 
-              <div class="hidden sm:flex items-center gap-2 shrink-0">
-                <span class="text-2xl bg-emerald-700 p-1 rounded-xl">🏪</span>
-                <h1 class="font-bold text-lg sm:text-xl text-white leading-none tracking-wide">
-                  สุวรรณ POS
-                </h1>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-2xl bg-emerald-700 p-1.5 rounded-xl shadow-sm">🏪</span>
+                <div>
+                  <h1 class="font-bold text-lg sm:text-xl text-white leading-tight tracking-wide">
+                    สุวรรณ การค้า
+                  </h1>
+                  <span class="text-[11px] text-emerald-400 font-medium block">ระบบ POS หน้าร้าน</span>
+                </div>
               </div>
+            </div>
 
-              <!-- SILOM POS ROUNDED WHITE SEARCH BAR IN TOP HEADER -->
-              <div class="relative flex items-center flex-1 max-w-md">
-                <span class="absolute left-3.5 text-slate-400 text-lg">🔍</span>
+            <!-- CENTER/RIGHT SECTION: CLEAN ROUNDED WHITE SEARCH INPUT BAR -->
+            <div class="relative flex items-center flex-1 max-w-lg justify-end">
+              <div class="relative w-full max-w-md">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔍</span>
                 <input 
                   id="barcode-input"
                   type="text"
@@ -1097,7 +1103,7 @@
                       const el = document.getElementById('barcode-input');
                       if (el) { el.value = ''; el.focus(); }
                     }}
-                    class="absolute right-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded-full text-xs font-bold"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded-full text-xs font-bold"
                   >
                     ✕
                   </button>
@@ -1105,95 +1111,6 @@
               </div>
             </div>
 
-            <!-- RIGHT SECTION: SILOM POS QUICK SHORTCUT TOOLBAR BUTTONS -->
-            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <button 
-                onClick=${() => {
-                  const el = document.getElementById('barcode-input');
-                  if (el) el.focus();
-                  playAudioTone('click');
-                }}
-                class="senior-btn px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-xl text-xs sm:text-sm flex items-center gap-1 font-medium shadow-sm"
-                title="โฟกัสรหัสสินค้า"
-              >
-                <span>🏷️</span>
-                <span class="hidden lg:inline">รหัสสินค้า</span>
-              </button>
-
-              <button 
-                onClick=${() => {
-                  playAudioTone('click');
-                  alert('💵 เปิดลิ้นชักเก็บเงินเรียบร้อยแล้ว');
-                }}
-                class="senior-btn px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl text-xs sm:text-sm flex items-center gap-1 font-medium shadow-sm"
-                title="เปิดลิ้นชักเก็บเงิน"
-              >
-                <span>💵</span>
-                <span class="hidden lg:inline">ลิ้นชัก</span>
-              </button>
-
-              <button 
-                onClick=${() => {
-                  if (cart().length === 0) {
-                    alert('ไม่มีรายการสินค้าในตะกร้าสำหรับพักบิลครับ');
-                    return;
-                  }
-                  setHeldBills([...heldBills(), { id: 'HOLD-' + Date.now(), cart: [...cart()], total: totalAmount() }]);
-                  setCart([]);
-                  playAudioTone('click');
-                  alert('⏸️ พักบิลเรียบร้อยแล้ว สามารถเรียกคืนบิลได้');
-                }}
-                class="senior-btn px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white border border-amber-500 rounded-xl text-xs sm:text-sm flex items-center gap-1 font-medium shadow-sm relative"
-                title="พักบิลรายการซื้อ"
-              >
-                <span>⏸️</span>
-                <span class="hidden lg:inline">พักบิล</span>
-                ${() => heldBills().length > 0 ? html`<span class="bg-red-500 text-white text-xs px-1.5 py-0.2 rounded-full font-bold">${heldBills().length}</span>` : ''}
-              </button>
-
-              <button 
-                onClick=${() => {
-                  const name = prompt('กรอกชื่อลูกค้า / สมาชิก:', customerName());
-                  if (name !== null && name.trim()) setCustomerName(name.trim());
-                  playAudioTone('click');
-                }}
-                class="senior-btn px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 rounded-xl text-xs sm:text-sm flex items-center gap-1 font-medium shadow-sm"
-                title="จัดการลูกค้า"
-              >
-                <span>👤</span>
-                <span class="hidden lg:inline truncate max-w-[80px]">${customerName}</span>
-              </button>
-
-              <button 
-                onClick=${() => { setSidebarOpen(true); playAudioTone('click'); }}
-                class="senior-btn px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs sm:text-sm flex items-center gap-1 font-medium shadow-sm"
-                title="ตัวเลือกเพิ่มเติม"
-              >
-                <span>⚙️</span>
-                <span class="hidden xl:inline">ตัวเลือก</span>
-              </button>
-
-              <button 
-                onClick=${fetchProductsFromAPI}
-                disabled=${loading}
-                class="senior-btn px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 rounded-xl font-normal text-xs sm:text-sm flex items-center gap-1 shadow-sm disabled:opacity-50"
-                title="รีเฟรช API สินค้า"
-              >
-                <span class="${() => loading() ? 'animate-spin' : ''}">🔄</span>
-              </button>
-
-              <button 
-                onClick=${() => {
-                  const next = !soundEnabled();
-                  setSoundEnabled(next);
-                  playAudioTone('click');
-                }}
-                class="senior-btn px-2.5 py-1.5 rounded-xl font-normal text-xs sm:text-sm flex items-center gap-1 border ${() => soundEnabled() ? 'bg-emerald-600 border-emerald-500 text-white shadow-sm' : 'bg-slate-800 border-slate-700 text-slate-400'}"
-                title="ระบบเสียง"
-              >
-                <span>${() => soundEnabled() ? '🔊' : '🔇'}</span>
-              </button>
-            </div>
           </header>
 
           <!-- COLLAPSIBLE SIDEBAR DRAWER OVERLAY & PANEL (HIDDEN BY DEFAULT) -->
@@ -1227,7 +1144,7 @@
                   </div>
 
                   <!-- Navigation Menu Items -->
-                  <nav class="flex flex-col gap-3.5">
+                  <nav class="flex flex-col gap-3">
                     <span class="text-xs text-slate-400 font-normal px-1 tracking-wider">เลือกเมนูการทำงาน:</span>
 
                     <button 
@@ -1236,13 +1153,13 @@
                         setSidebarOpen(false);
                         playAudioTone('click');
                       }}
-                      class="senior-btn px-5 py-4 rounded-2xl font-normal text-xl sm:text-2xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'pos' ? 'bg-sky-600 text-white border-sky-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
+                      class="senior-btn px-4 py-3 rounded-2xl font-normal text-lg sm:text-xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'pos' ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
                     >
                       <div class="flex items-center gap-3">
-                        <span class="text-3xl">🛒</span>
+                        <span class="text-2xl">🛒</span>
                         <span>หน้าร้าน (POS)</span>
                       </div>
-                      <span class="text-xl text-sky-300">➔</span>
+                      <span class="text-lg text-emerald-300">➔</span>
                     </button>
 
                     <button 
@@ -1251,13 +1168,13 @@
                         setSidebarOpen(false);
                         playAudioTone('click');
                       }}
-                      class="senior-btn px-5 py-4 rounded-2xl font-normal text-xl sm:text-2xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'dashboard' ? 'bg-sky-600 text-white border-sky-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
+                      class="senior-btn px-4 py-3 rounded-2xl font-normal text-lg sm:text-xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'dashboard' ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
                     >
                       <div class="flex items-center gap-3">
-                        <span class="text-3xl">📊</span>
+                        <span class="text-2xl">📊</span>
                         <span>รายงานยอดขาย (Dashboard)</span>
                       </div>
-                      <span class="text-xl text-sky-300">➔</span>
+                      <span class="text-lg text-emerald-300">➔</span>
                     </button>
 
                     <button 
@@ -1266,13 +1183,13 @@
                         setSidebarOpen(false);
                         playAudioTone('click');
                       }}
-                      class="senior-btn px-5 py-4 rounded-2xl font-normal text-xl sm:text-2xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'closure' ? 'bg-sky-600 text-white border-sky-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
+                      class="senior-btn px-4 py-3 rounded-2xl font-normal text-lg sm:text-xl flex items-center justify-between border-2 transition-all ${() => activeTab() === 'closure' ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg scale-[1.02]' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'}"
                     >
                       <div class="flex items-center gap-3">
-                        <span class="text-3xl">🔔</span>
+                        <span class="text-2xl">🔔</span>
                         <span>สรุปปิดยอดประจำวัน</span>
                       </div>
-                      <span class="text-xl text-sky-300">➔</span>
+                      <span class="text-lg text-emerald-300">➔</span>
                     </button>
 
                     <button 
@@ -1281,15 +1198,119 @@
                         setSidebarOpen(false);
                         playAudioTone('click');
                       }}
-                      class="senior-btn px-5 py-4 rounded-2xl font-normal text-xl sm:text-2xl flex items-center justify-between border-2 transition-all bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white"
+                      class="senior-btn px-4 py-3 rounded-2xl font-normal text-lg sm:text-xl flex items-center justify-between border-2 transition-all bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white"
                     >
                       <div class="flex items-center gap-3">
-                        <span class="text-3xl">💸</span>
+                        <span class="text-2xl">💸</span>
                         <span>บันทึกรายจ่าย</span>
                       </div>
-                      <span class="text-xl text-sky-300">➔</span>
+                      <span class="text-lg text-emerald-300">➔</span>
                     </button>
                   </nav>
+
+                  <!-- SYSTEM SHORTCUT TOOLS INSIDE DRAWER -->
+                  <div class="border-t border-slate-800 pt-3 flex flex-col gap-2">
+                    <span class="text-xs text-emerald-400 font-bold tracking-wider uppercase px-1">🛠️ เครื่องมือลัด / ระบบ:</span>
+
+                    <button 
+                      onClick=${() => {
+                        const el = document.getElementById('barcode-input');
+                        if (el) el.focus();
+                        setSidebarOpen(false);
+                        playAudioTone('click');
+                      }}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl text-sm flex items-center justify-between border border-slate-700"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span>🏷️</span>
+                        <span>ค้นหา/โฟกัสรหัสสินค้า</span>
+                      </div>
+                      <span class="text-xs text-slate-400">🔍</span>
+                    </button>
+
+                    <button 
+                      onClick=${() => {
+                        playAudioTone('click');
+                        setSidebarOpen(false);
+                        alert('💵 เปิดลิ้นชักเก็บเงินเรียบร้อยแล้ว');
+                      }}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm flex items-center justify-between border border-slate-700"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span>💵</span>
+                        <span>เปิดลิ้นชักเก็บเงิน</span>
+                      </div>
+                      <span class="text-xs text-slate-400">ลิ้นชัก</span>
+                    </button>
+
+                    <button 
+                      onClick=${() => {
+                        setSidebarOpen(false);
+                        if (cart().length === 0) {
+                          alert('ไม่มีรายการสินค้าในตะกร้าสำหรับพักบิลครับ');
+                          return;
+                        }
+                        setHeldBills([...heldBills(), { id: 'HOLD-' + Date.now(), cart: [...cart()], total: totalAmount() }]);
+                        setCart([]);
+                        playAudioTone('click');
+                        alert('⏸️ พักบิลเรียบร้อยแล้ว');
+                      }}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-sm flex items-center justify-between border border-slate-700"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span>⏸️</span>
+                        <span>พักบิลรายการสินค้า</span>
+                      </div>
+                      <span class="bg-amber-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">${() => heldBills().length}</span>
+                    </button>
+
+                    <button 
+                      onClick=${() => {
+                        setSidebarOpen(false);
+                        const name = prompt('กรอกชื่อลูกค้า / สมาชิก:', customerName());
+                        if (name !== null && name.trim()) setCustomerName(name.trim());
+                        playAudioTone('click');
+                      }}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-xl text-sm flex items-center justify-between border border-slate-700"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span>👤</span>
+                        <span class="truncate">ลูกค้า: ${customerName}</span>
+                      </div>
+                      <span class="text-xs text-slate-400">แก้ไข</span>
+                    </button>
+
+                    <button 
+                      onClick=${() => {
+                        setSidebarOpen(false);
+                        fetchProductsFromAPI();
+                      }}
+                      disabled=${loading}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded-xl text-sm flex items-center justify-between border border-slate-700 disabled:opacity-50"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span class="${() => loading() ? 'animate-spin' : ''}">🔄</span>
+                        <span>รีเฟรช API สินค้า</span>
+                      </div>
+                      <span class="text-xs text-slate-400">ซิงค์</span>
+                    </button>
+
+                    <button 
+                      onClick=${() => {
+                        const next = !soundEnabled();
+                        setSoundEnabled(next);
+                        playAudioTone('click');
+                        if (next) speakThai('เปิดระบบเสียงอ่านภาษาไทยเรียบร้อยค่ะ');
+                      }}
+                      class="senior-btn px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm flex items-center justify-between border border-slate-700"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span>${() => soundEnabled() ? '🔊' : '🔇'}</span>
+                        <span>ระบบเสียงอ่านภาษาไทย</span>
+                      </div>
+                      <span class="text-xs text-slate-400">${() => soundEnabled() ? 'เปิด' : 'ปิด'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Sidebar Footer -->
@@ -1454,39 +1475,48 @@
                       </div>
                     </div>
 
-                    <!-- SILOM POS LARGE GREEN PAYMENT BUTTON -->
+                    <!-- SILOM POS DARK GREEN PAYMENT BUTTON (OPENS PAYMENT OPTIONS MODAL) -->
                     <button 
-                      onClick=${() => openPaymentModal('cash')}
+                      onClick=${() => {
+                        if (cart().length === 0) {
+                          playAudioTone('error');
+                          alert('กรุณาเลือกสินค้าลงตะกร้าก่อนชำระเงินครับ!');
+                          speakThai('ยังไม่มีสินค้าในตะกร้าค่ะ');
+                          return;
+                        }
+                        playAudioTone('click');
+                        setPaymentSelectModalOpen(true);
+                      }}
                       disabled=${() => cart().length === 0}
-                      class="senior-btn w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xl sm:text-2xl rounded-xl shadow-lg border-2 border-emerald-400 flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+                      class="senior-btn w-full py-4 bg-[#059669] hover:bg-[#15803D] text-white font-bold text-xl sm:text-2xl rounded-xl shadow-lg border-2 border-emerald-600 flex items-center justify-center gap-2.5 disabled:opacity-40 transition-all cursor-pointer"
                     >
-                      <span>💳</span>
+                      <span class="text-2xl">💳</span>
                       <span>ชำระเงิน (฿${() => totalAmount().toLocaleString('th-TH', { minimumFractionDigits: 2 })})</span>
                     </button>
 
                   </div>
 
-                  <!-- CART ITEMS LIST BELOW SUMMARY -->
-                  <div class="flex-1 overflow-y-auto min-h-[180px] max-h-[320px] my-3 pr-1 flex flex-col gap-2">
+                  <!-- CART ITEMS LIST BELOW SUMMARY (EXPANDS FULLY NOW THAT BOTTOM 4 BUTTONS ARE REMOVED) -->
+                  <div class="flex-1 overflow-y-auto min-h-[260px] max-h-[500px] my-3 pr-1 flex flex-col gap-2">
                     ${() => {
                       const items = cart();
                       if (items.length === 0) {
                         return html`
-                          <div class="h-full flex flex-col items-center justify-center text-gray-400 py-8">
-                            <span class="text-5xl mb-1 opacity-40">🛒</span>
-                            <p class="text-base font-medium text-gray-600">ไม่มีรายการในตะกร้า</p>
-                            <p class="text-xs text-gray-400 mt-0.5">เลือกสินค้าจากรายการตรงกลาง</p>
+                          <div class="h-full flex flex-col items-center justify-center text-gray-400 py-12">
+                            <span class="text-6xl mb-2 opacity-40">🛒</span>
+                            <p class="text-lg font-medium text-gray-600">ไม่มีรายการในตะกร้า</p>
+                            <p class="text-xs text-gray-400 mt-1">เลือกสินค้าจากรายการทางซ้ายมือ</p>
                           </div>
                         `;
                       }
                       return items.map(item => {
                         const { mainName, sizeSpec } = formatProductName(item.productName);
                         return html`
-                          <div class="bg-gray-50 border border-gray-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                          <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between gap-2 shadow-2xs hover:bg-gray-100/80 transition-colors">
                             
                             <div class="flex-1 min-w-0 pr-1">
-                              <h4 class="font-medium text-gray-800 text-sm leading-tight truncate">${mainName}</h4>
-                              ${sizeSpec ? html`<span class="text-[11px] text-gray-400 block">${sizeSpec}</span>` : ''}
+                              <h4 class="font-medium text-gray-800 text-base leading-tight truncate">${mainName}</h4>
+                              ${sizeSpec ? html`<span class="text-xs text-gray-400 block">${sizeSpec}</span>` : ''}
                               <span class="text-emerald-700 font-semibold text-sm">
                                 ฿${item.price}
                               </span>
@@ -1495,26 +1525,26 @@
                             <div class="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-gray-300">
                               <button 
                                 onClick=${() => updateQty(item.productID, -1)}
-                                class="senior-btn w-7 h-7 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-lg rounded flex items-center justify-center border border-gray-300"
+                                class="senior-btn w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xl rounded flex items-center justify-center border border-gray-300"
                               >
                                 -
                               </button>
-                              <span class="font-bold text-base w-6 text-center text-gray-900">${item.qty}</span>
+                              <span class="font-bold text-base w-7 text-center text-gray-900">${item.qty}</span>
                               <button 
                                 onClick=${() => updateQty(item.productID, 1)}
-                                class="senior-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded flex items-center justify-center border border-emerald-500"
+                                class="senior-btn w-8 h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xl rounded flex items-center justify-center border border-emerald-500"
                               >
                                 +
                               </button>
                             </div>
 
-                            <div class="text-right shrink-0 min-w-[60px]">
+                            <div class="text-right shrink-0 min-w-[70px]">
                               <span class="font-bold text-base text-gray-900 block">
                                 ฿${(item.price * item.qty).toLocaleString('th-TH')}
                               </span>
                               <button 
                                 onClick=${() => removeFromCart(item.productID)}
-                                class="text-[11px] text-red-500 hover:underline"
+                                class="text-xs text-red-500 hover:underline"
                               >
                                 ลบ
                               </button>
@@ -1526,41 +1556,11 @@
                     }}
                   </div>
 
-                  <!-- 4 PAYMENT METHOD BUTTONS AT BOTTOM -->
-                  <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-                    <button 
-                      onClick=${() => openPaymentModal('cash')}
-                      disabled=${() => cart().length === 0}
-                      class="senior-btn py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-30"
-                    >
-                      <span>💵</span>
-                      <span>เงินสด</span>
-                    </button>
-                    <button 
-                      onClick=${() => openPaymentModal('transfer')}
-                      disabled=${() => cart().length === 0}
-                      class="senior-btn py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-30"
-                    >
-                      <span>📲</span>
-                      <span>โอนเงิน</span>
-                    </button>
-                    <button 
-                      onClick=${() => openPaymentModal('thongfah')}
-                      disabled=${() => cart().length === 0}
-                      class="senior-btn py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-30"
-                    >
-                      <span>🏷️</span>
-                      <span>ธงฟ้า</span>
-                    </button>
-                    <button 
-                      onClick=${() => openPaymentModal('thaichueaythai')}
-                      disabled=${() => cart().length === 0}
-                      class="senior-btn py-2 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-30"
-                    >
-                      <span>🇹🇭</span>
-                      <span>ไทยช่วยไทย</span>
-                    </button>
-                  </div>
+                </div>
+              </div>
+
+            </div>
+          ` : ''}
 
                 </div>
               </div>
@@ -1925,7 +1925,99 @@
             </div>
           ` : ''}
 
+          <!-- PAYMENT METHOD SELECTION POPUP MODAL -->
+          ${() => paymentSelectModalOpen() ? html`
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div class="bg-white border-2 border-slate-300 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
+                
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <h3 class="font-bold text-2xl text-slate-900 flex items-center gap-2">
+                    <span>💳 เลือกช่องทางชำระเงิน</span>
+                  </h3>
+                  <button 
+                    onClick=${() => setPaymentSelectModalOpen(false)}
+                    class="senior-btn bg-slate-200 hover:bg-slate-300 text-slate-800 px-3.5 py-1 rounded-xl text-sm font-bold"
+                  >
+                    ✕ ปิด
+                  </button>
+                </div>
 
+                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-center">
+                  <span class="text-xs text-gray-500 font-medium block">ยอดเงินรวมที่ต้องชำระสุทธิ:</span>
+                  <span class="text-3xl sm:text-4xl font-bold text-emerald-700 tracking-tight">
+                    ฿${() => totalAmount().toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                  </span>
+                  <span class="text-xs text-gray-400 block mt-0.5">${totalItemsCount} รายการสินค้า</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-1">
+                  <button 
+                    onClick=${() => {
+                      setPaymentSelectModalOpen(false);
+                      openPaymentModal('cash');
+                    }}
+                    class="senior-btn p-4 bg-[#059669] hover:bg-[#15803D] text-white font-bold rounded-2xl shadow-md border-2 border-emerald-600 flex items-center justify-start gap-3 transition-all cursor-pointer"
+                  >
+                    <span class="text-3xl shrink-0">💵</span>
+                    <div class="text-left">
+                      <span class="block text-base leading-tight">1. เงินสด</span>
+                      <span class="text-[11px] text-emerald-100 font-normal">Cash Payment</span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick=${() => {
+                      setPaymentSelectModalOpen(false);
+                      openPaymentModal('transfer');
+                    }}
+                    class="senior-btn p-4 bg-[#059669] hover:bg-[#15803D] text-white font-bold rounded-2xl shadow-md border-2 border-emerald-600 flex items-center justify-start gap-3 transition-all cursor-pointer"
+                  >
+                    <span class="text-3xl shrink-0">📲</span>
+                    <div class="text-left">
+                      <span class="block text-base leading-tight">2. โอนเงิน / QR</span>
+                      <span class="text-[11px] text-emerald-100 font-normal">PromptPay QR</span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick=${() => {
+                      setPaymentSelectModalOpen(false);
+                      openPaymentModal('thongfah');
+                    }}
+                    class="senior-btn p-4 bg-[#059669] hover:bg-[#15803D] text-white font-bold rounded-2xl shadow-md border-2 border-emerald-600 flex items-center justify-start gap-3 transition-all cursor-pointer"
+                  >
+                    <span class="text-3xl shrink-0">🏷️</span>
+                    <div class="text-left">
+                      <span class="block text-base leading-tight">3. บัตรธงฟ้า</span>
+                      <span class="text-[11px] text-emerald-100 font-normal">สวัสดิการแห่งรัฐ</span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick=${() => {
+                      setPaymentSelectModalOpen(false);
+                      openPaymentModal('thaichueaythai');
+                    }}
+                    class="senior-btn p-4 bg-[#059669] hover:bg-[#15803D] text-white font-bold rounded-2xl shadow-md border-2 border-emerald-600 flex items-center justify-start gap-3 transition-all cursor-pointer"
+                  >
+                    <span class="text-3xl shrink-0">🇹🇭</span>
+                    <div class="text-left">
+                      <span class="block text-base leading-tight">4. ไทยช่วยไทย</span>
+                      <span class="text-[11px] text-emerald-100 font-normal">โครงการรัฐบาล</span>
+                    </div>
+                  </button>
+                </div>
+
+                <button 
+                  onClick=${() => setPaymentSelectModalOpen(false)}
+                  class="senior-btn py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-base rounded-2xl border border-gray-300"
+                >
+                  ย้อนกลับ / ยกเลิก
+                </button>
+
+              </div>
+            </div>
+          ` : ''}
 
           <!-- CAMERA BARCODE SCANNER MODAL -->
           ${() => cameraModalOpen() ? html`
